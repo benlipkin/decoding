@@ -1,0 +1,8 @@
+{
+  "include": ["decoding", "tests", "examples"],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "strict",
+  "reportUnknownArgumentType": "none",
+  "reportUnknownMemberType": "none",
+  "reportUnknownVariableType": "none",
+}

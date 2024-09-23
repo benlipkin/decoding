@@ -1,0 +1,19 @@
+line-length = 88
+indent-width = 4
+target-version = "py312"
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[lint]
+select = ["ALL"]
+ignore = ["COM812", "D200", "D203", "D205", "D212", "ISC001", "N802"]
+fixable = ["ALL"]
+unfixable = []
+
+[lint.per-file-ignores]
+"tests/*.py" = ["D", "ANN401", "INP001", "S101"]
+"examples/*.py" = ["D", "INP001", "S101", "T201", "TRY300"]

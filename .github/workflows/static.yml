@@ -1,0 +1,26 @@
+name:                  Tests
+on:
+  push:
+    branches:          [main]
+  pull_request:
+    branches:          [main]
+jobs:
+  run_tests:
+    runs-on:           ubuntu-latest
+    steps:
+      - name:          checkout repo
+        uses:          actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name:          setup python
+        uses:          actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name:          check formatting
+        run:           make format
+      - name:          run linter
+        run:           make ruff
+      - name:          run type checker
+        run:           make pyright
+      - name:          build docs
+        run:           make docs
