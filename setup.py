@@ -26,7 +26,7 @@ with pathlib.Path("README.md").open(encoding="utf-8") as f:
 
 setuptools.setup(
     name="decoding",
-    version="0.1.0",
+    version="0.1.0.post1",
     description="Composable inference algorithms with LLMs and programmable logic",
     long_description=readme,
     long_description_content_type="text/markdown",
