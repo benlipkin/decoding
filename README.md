@@ -15,12 +15,10 @@ Scaling inference thoughtfully is where the next breakthrough gains will come in
 
 ## Getting started
 
-For now, install from source. Coming soon to `PyPi`.
+Install directly from [PyPi](https://pypi.org/project/decoding/)
 
 ```bash
-git clone git@github.com:benlipkin/decoding.git
-cd decoding/
-python -m pip install .
+python -m pip install decoding
 ```
 
 See [Contributing](https://github.com/benlipkin/decoding#documentation) for how to build the dev and testing environment.
@@ -64,13 +62,16 @@ We welcome community contributions. Open an issue or a pull request if you see a
 To get started with development, this library supports an automated build of the dev and testing env using [GNU Make](https://www.gnu.org/software/make/).
 
 ```bash
-make env # install library in current env
+# clone repo and install lib in current env
+git clone git@github.com:benlipkin/decoding.git
+cd decoding/
+make env
 ```
 
 Before opening a PR, make sure all tests are passing:
 
 ```bash
-make tests # run linting, type-checking, and unit-tests
+make tests
 ```
 
 
