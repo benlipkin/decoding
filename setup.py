@@ -2,6 +2,8 @@
 Setup file for the decoding library.
 """
 
+import pathlib
+
 import setuptools
 
 core_requirements = [
@@ -19,10 +21,15 @@ dev_requirements = [
     "ruff==0.6.7",
 ]
 
+with pathlib.Path("README.md").open(encoding="utf-8") as f:
+    readme = f.read()
+
 setuptools.setup(
     name="decoding",
     version="0.1.0",
     description="Composable LLM decoding algorithms",
+    long_description=readme,
+    long_description_content_type="text/markdown",
     authors=["Ben Lipkin"],
     license="Apache 2.0",
     install_requires=core_requirements,
