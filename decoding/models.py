@@ -10,6 +10,7 @@ is also provided to load a model by its Hugging Face model ID and manage memory,
 # ruff: noqa: E402
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TypedDict, TypeGuard, Unpack
 
@@ -72,7 +73,7 @@ class LanguageModel:
         return self._llm.get_tokenizer()
 
     def __call__(
-        self, *, prompts: list[str], params: SamplingParams
+        self, *, prompts: Sequence[str], params: SamplingParams
     ) -> CategoricalLogPMF[str]:
         """
         `__call__` is an alias for `generate`.
@@ -80,13 +81,13 @@ class LanguageModel:
         return self.generate(prompts=prompts, params=params)
 
     def generate(
-        self, *, prompts: list[str], params: SamplingParams
+        self, *, prompts: Sequence[str], params: SamplingParams
     ) -> CategoricalLogPMF[str]:
         """
         Generate text conditioned on the given prompts.
 
         Args:
-            prompts: A list of prompts.
+            prompts: A batch of prompts.
             params: An instance of
                 [`vllm.SamplingParams`](https://docs.vllm.ai/en/latest/dev/sampling_params.html)
                 for sampling. See the vLLM documentation for more details.
@@ -121,8 +122,8 @@ class LanguageModel:
 
         """
         if _check_track_logprobs(params):
-            return self._generate_w_logprobs(prompts=prompts, params=params)
-        return self._generate_wo_logprobs(prompts=prompts, params=params)
+            return self._generate_w_logprobs(prompts=list(prompts), params=params)
+        return self._generate_wo_logprobs(prompts=list(prompts), params=params)
 
     def _generate_w_logprobs(
         self, *, prompts: list[str], params: SamplingParams
@@ -151,13 +152,13 @@ class LanguageModel:
             samples.extend([prompt_text + o.text for o in response.outputs])
         return CategoricalLogPMF.from_samples(samples)
 
-    def surprise(self, *, contexts: list[str], queries: list[str]) -> FVX:
+    def surprise(self, *, contexts: Sequence[str], queries: Sequence[str]) -> FVX:
         """
         Calculate the surprisal of queries given contexts.
 
         Args:
-            contexts: A list of contexts.
-            queries: A list of queries.
+            contexts: A batch of contexts.
+            queries: A batch of queries.
 
         Returns:
             A JAX 1D array of surprisals for each query given its context.
@@ -303,13 +304,15 @@ def _validate_sampling_params(params: SamplingParams, *, track_logprobs: bool) -
         raise ValueError(msg)
 
 
-def _validate_queries_nonempty(queries: list[str]) -> None:
+def _validate_queries_nonempty(queries: Sequence[str]) -> None:
     if not all(queries):
         msg = "Queries must be non-empty"
         raise ValueError(msg)
 
 
-def _validate_matched_contexts_queries(contexts: list[str], queries: list[str]) -> None:
+def _validate_matched_contexts_queries(
+    contexts: Sequence[str], queries: Sequence[str]
+) -> None:
     if len(contexts) != len(queries):
         msg = "Contexts and queries must have the same length"
         raise ValueError(msg)
