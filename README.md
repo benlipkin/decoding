@@ -23,6 +23,8 @@ python -m pip install decoding
 
 See [Contributing](https://github.com/benlipkin/decoding#documentation) for how to build the dev and testing environment.
 
+<u>NOTE:</u> Decoding depends on `vLLM`, which means this library can only be built on linux, and by default must be run on GPU. To run on CPU, see the [instructions from vLLM](https://docs.vllm.ai/en/latest/getting_started/cpu-installation.html).
+
 ### Documentation
 
 All modules, classes, and functions of our public interface are documented on our [website](https://benlipkin.github.io/decoding/). The docs should be the first stop for questions about the API. More realistic use cases and interesting patterns can be found in the tutorial.
