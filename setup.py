@@ -9,16 +9,16 @@ import setuptools
 core_requirements = [
     "jax==0.4.31",
     "jaxtyping==0.2.34",
-    "vllm==0.6.1.post2",
+    "vllm==0.6.2",
 ]
 dev_requirements = [
     "pdoc==14.7.0",
     "pre-commit==3.8.0",
-    "pyright==1.1.381",
+    "pyright==1.1.382.post1",
     "pytest==8.3.3",
     "pytest-cov==5.0.0",
     "pytest-html==4.1.1",
-    "ruff==0.6.7",
+    "ruff==0.6.8",
 ]
 
 with pathlib.Path("README.md").open(encoding="utf-8") as f:
@@ -26,7 +26,7 @@ with pathlib.Path("README.md").open(encoding="utf-8") as f:
 
 setuptools.setup(
     name="decoding",
-    version="0.1.0.post1",
+    version="0.1.1",
     description="Composable inference algorithms with LLMs and programmable logic",
     long_description=readme,
     long_description_content_type="text/markdown",
