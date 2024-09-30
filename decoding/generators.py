@@ -46,17 +46,13 @@ def BestOfN(  # noqa: PLR0913
     include_stop_str_in_output: bool = True,
     track_logprobs: bool = False,
     temperature: float = 1.0,
-    presence_penalty: float = 0.0,
-    frequency_penalty: float = 0.0,
-    repetition_penalty: float = 1.0,
     logits_processors: list[LogitsProcessor] | None = None,
     seed: int | None = None,
 ) -> list[Sample[str]]:
     """
     Generate `n` samples from the language model `llm` using the `scorer` to rank them.
     See the [`vLLM.SamplingParams`](https://docs.vllm.ai/en/latest/dev/sampling_params.html)
-    documentation to learn more about some of these parameters including the `*_penalty`
-    parameters and `logits_processors`.
+    docs to learn more about some of these parameters such as `logits_processors`.
 
     Args:
         prompt: The input prompt string.
@@ -75,9 +71,6 @@ def BestOfN(  # noqa: PLR0913
             from the model, you do not want to double count the probabilities in the
             scorer anyways.
         temperature: The temperature for sampling.
-        presence_penalty: The presence penalty for sampling.
-        frequency_penalty: The frequency penalty for sampling.
-        repetition_penalty: The repetition penalty for sampling.
         logits_processors: A list of logits processors.
         seed: The random seed.
 
@@ -120,9 +113,6 @@ def BestOfN(  # noqa: PLR0913
         logprobs=_prepare_track_logprobs(track_logprobs),
         prompt_logprobs=_prepare_track_logprobs(track_logprobs),
         temperature=temperature,
-        presence_penalty=presence_penalty,
-        frequency_penalty=frequency_penalty,
-        repetition_penalty=repetition_penalty,
         logits_processors=logits_processors,
         seed=seed,
         **_default_sampling_kwargs,  # type: ignore[reportArgumentType]
@@ -150,9 +140,6 @@ def BeamSearch(  # noqa: PLR0913
     include_sync_str_in_output: bool = True,
     track_logprobs: bool = False,
     temperature: float = 1.0,
-    presence_penalty: float = 0.0,
-    frequency_penalty: float = 0.0,
-    repetition_penalty: float = 1.0,
     logits_processors: list[LogitsProcessor] | None = None,
     seed: int | None = None,
 ) -> list[Sample[str]]:
@@ -189,12 +176,6 @@ def BeamSearch(  # noqa: PLR0913
             from the model, you do not want to double count the probabilities in the
             scorer anyways.
         temperature: The temperature for sampling.
-        presence_penalty: The presence penalty for sampling.
-            NB: This is applied within each step as opposed to globally.
-        frequency_penalty: The frequency penalty for sampling.
-            NB: This is applied within each step as opposed to globally.
-        repetition_penalty: The repetition penalty for sampling.
-            NB: This is applied within each step as opposed to globally.
         logits_processors: A list of logits processors.
             NB: This is applied within each step as opposed to globally.
         seed: The random seed.
@@ -203,9 +184,9 @@ def BeamSearch(  # noqa: PLR0913
         A list of `decoding.pmf.Sample` objects sorted by the `final_scorer`.
 
     Raises:
-        ValueError: If any of the argument configurations are invalid, if
-            all active samples fail the stop condition, or if max steps
-            is reached before any samples pass the stop condition.
+        ValueError: If any of the argument configurations are invalid
+        RuntimeError: if all active samples in the beam fail,
+            or if max steps is reached before any samples pass.
 
     Examples:
         ```python
@@ -259,9 +240,6 @@ def BeamSearch(  # noqa: PLR0913
         logprobs=_prepare_track_logprobs(track_logprobs),
         prompt_logprobs=_prepare_track_logprobs(track_logprobs),
         temperature=temperature,
-        presence_penalty=presence_penalty,
-        frequency_penalty=frequency_penalty,
-        repetition_penalty=repetition_penalty,
         logits_processors=logits_processors,
         seed=seed,
         **_default_sampling_kwargs,  # type: ignore[reportArgumentType]
@@ -364,7 +342,7 @@ def _handle_failed_beam(finished: set[Sample[str]]) -> list[Sample[str]]:
     if len(finished) == 0:
         msg = "All live samples failed."
         msg += " Check compatibility of stop conditions or expand search."
-        raise ValueError(msg)
+        raise RuntimeError(msg)
     import warnings
 
     msg = "All live samples failed. Returning available finished samples."
@@ -375,7 +353,7 @@ def _handle_failed_beam(finished: set[Sample[str]]) -> list[Sample[str]]:
 def _handle_maxsteps(finished: set[Sample[str]]) -> list[Sample[str]]:
     if len(finished) == 0:
         msg = "Max steps reached, and no samples passed stop conditions."
-        raise ValueError(msg)
+        raise RuntimeError(msg)
     import warnings
 
     msg = "Max steps reached. Returning available finished samples."

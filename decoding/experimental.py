@@ -38,9 +38,6 @@ def MCTS(  # noqa: PLR0913
     include_sync_str_in_output: bool = True,
     track_logprobs: bool = False,
     temperature: float = 1.0,
-    presence_penalty: float = 0.0,
-    frequency_penalty: float = 0.0,
-    repetition_penalty: float = 1.0,
     logits_processors: list[LogitsProcessor] | None = None,
     seed: int | None = None,
 ) -> list[Sample[str]]:
@@ -63,9 +60,6 @@ def MCTS(  # noqa: PLR0913
         logprobs=_prepare_track_logprobs(track_logprobs),
         prompt_logprobs=_prepare_track_logprobs(track_logprobs),
         temperature=temperature,
-        presence_penalty=presence_penalty,
-        frequency_penalty=frequency_penalty,
-        repetition_penalty=repetition_penalty,
         logits_processors=logits_processors,
         seed=seed,
         **_default_sampling_kwargs,  # type: ignore[reportArgumentType]

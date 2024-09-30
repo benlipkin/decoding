@@ -141,7 +141,7 @@ def test_beamsearch_fail() -> None:
 
     msg = "All live samples failed."
     msg += " Check compatibility of stop conditions or expand search."
-    with pytest.raises(ValueError, match=msg):
+    with pytest.raises(RuntimeError, match=msg):
         beam_search(1, 30, 2)
 
 
@@ -184,7 +184,7 @@ def test_beamsearch_maxsteps() -> None:
     assert all(end in s.item for s in out)
 
     msg = "Max steps reached, and no samples passed stop conditions."
-    with pytest.raises(ValueError, match=msg):
+    with pytest.raises(RuntimeError, match=msg):
         beam_search(1)
 
     msg = "Expected a positive integer"
