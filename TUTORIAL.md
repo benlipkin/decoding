@@ -80,7 +80,7 @@ The `BestOfN` function is the user's interface to the generation process. Here t
 
 Now, let's check a more involved example.
 
-## 2. Solve a theorem proving task by running `BeamSearch` line-by-line, backtracking on syntax-errors, and collapsing the final beam with `SelfConsistency`.
+## 2. Solve a theorem proving task by running `TreeSearch` line-by-line, backtracking on syntax-errors, and collapsing the final beam with `SelfConsistency`.
 
 ```python
 # first, install `nltk` to run this example
@@ -88,7 +88,7 @@ from nltk.inference import TableauProver
 from nltk.sem import Expression
 from nltk.sem.logic import LogicalExpressionException, LogicParser
 
-from decoding.generators import BeamSearch
+from decoding.generators import TreeSearch
 from decoding.estimators import SelfConsistency
 from decoding.models import LanguageModel
 from decoding.pmf import CategoricalLogPMF, Sample
@@ -203,9 +203,9 @@ final_scorer = Scorer.from_f_catlogpmf_to_batch_sample(final_score_fn)
 # but if we'd like to use the string probabilities to weight the `SelfConsistency`,
 # we can access it
 
-# finally, let's wrap this all up in a `BeamSearch` generator
+# finally, let's wrap this all up in a `TreeSearch` generator
 def run(prompt: str) -> list[Sample[str]]:
-    return BeamSearch(
+    return TreeSearch(
         prompt=prompt,
         llm=llm,
         step_scorer=step_scorer,
@@ -231,11 +231,11 @@ Note that here again, we relied on a small 3B model and used a well-designed alg
 
 This example introduced a few more important patterns. 
 
-We imported a `LanguageModel`, a `Scorer`, and a generator (here `BeamSearch`) again, as well as `SelfConsistency`, an estimator.
+We imported a `LanguageModel`, a `Scorer`, and a generator (here `TreeSearch`) again, as well as `SelfConsistency`, an estimator.
 
 The `decoding.estimators` module contains methods for reducing probability distributions, including a simple `MAP` estimator and building blocks for various `MBR` (minimum Bayes risk) estimators that accept arbitrary user-defined utility functions. In addition to the standard fully assymetric $O(n^2)$ `MBR` variant, we provide variants that shave off a factor of $2$ in case of symmetry with `commutativeMBR`, or an $O(n)$ `linearMBR` algorithm when utilities can be computed independently on a per-element basis. See the [`decoding.estimators`](https://benlipkin.github.io/decoding/decoding/estimators.html) docs to learn more.
 
-In addition to the `BeamSearch` generator for cases where we want synchronous rescoring, those underlying components support additional algorithms such as Monte Carlo Tree Search (`MCTS`), which can be found in `decoding.experimental`. This algorithm is based off of `BeamSearch` using a lookahead mechanism during scoring, but the interface is still under development. It will be migrated to the core library when it is stable.
+In addition to the `TreeSearch` generator for general cases where we want synchronous rescoring, those underlying components support additional increasingly specific algorithms such as a powerful Monte Carlo Tree Search (MCTS) variant, via the `RolloutTreeSearch` generator, which can be found in `decoding.experimental`. This algorithm is based off of `TreeSearch` using a rollout mechanism inside scoring, but the interface is still under development. It will be migrated to the core library when it is stable.
 
 ## 3. What next?
 

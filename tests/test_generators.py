@@ -1,6 +1,6 @@
 import pytest
 
-from decoding.generators import BeamSearch, BestOfN
+from decoding.generators import BestOfN, TreeSearch
 from decoding.models import LanguageModel
 from decoding.pmf import Sample
 from decoding.scorers import Scorer
@@ -30,7 +30,7 @@ def test_bestofn() -> None:
         BestOfN(llm=llm, scorer=scorer, prompt=start, stop_token_ids=start)
 
 
-def test_beamsearch_basic() -> None:
+def test_treesearch_basic() -> None:
     start = "The"
     delim = " "
     end = "."
@@ -42,7 +42,7 @@ def test_beamsearch_basic() -> None:
         return end in s
 
     scorer = Scorer.from_f_str_to_num(utility)
-    sentence = BeamSearch(
+    sentence = TreeSearch(
         llm=llm,
         step_scorer=scorer,
         prompt=start,
@@ -57,7 +57,7 @@ def test_beamsearch_basic() -> None:
     assert end in sentence
 
 
-def test_beamsearch_step() -> None:
+def test_treesearch_step() -> None:
     start = "The"
     delim = " "
     end = "."
@@ -77,7 +77,7 @@ def test_beamsearch_step() -> None:
 
     step_scorer = Scorer.from_f_str_to_num(utility_step)
     final_scorer = Scorer.from_f_str_to_num(utility_final)
-    sentence = BeamSearch(
+    sentence = TreeSearch(
         llm=llm,
         step_scorer=step_scorer,
         final_scorer=final_scorer,
@@ -93,7 +93,7 @@ def test_beamsearch_step() -> None:
     assert end in sentence
 
 
-def test_beamsearch_fail() -> None:
+def test_treesearch_fail() -> None:
     max_len_constraint = 20
     start = "The"
     delim = " "
@@ -111,7 +111,7 @@ def test_beamsearch_fail() -> None:
     scorer = Scorer.from_f_str_to_num(utility)
 
     def beam_search(n: int, beam_width: int, beam_factor: int) -> list[Sample[str]]:
-        return BeamSearch(
+        return TreeSearch(
             llm=llm,
             step_scorer=scorer,
             prompt=start,
@@ -145,7 +145,7 @@ def test_beamsearch_fail() -> None:
         beam_search(1, 30, 2)
 
 
-def test_beamsearch_maxsteps() -> None:
+def test_treesearch_maxsteps() -> None:
     start = "The"
     delim = " "
     end = "."
@@ -159,7 +159,7 @@ def test_beamsearch_maxsteps() -> None:
     scorer = Scorer.from_f_str_to_num(utility)
 
     def beam_search(max_steps: int) -> list[Sample[str]]:
-        return BeamSearch(
+        return TreeSearch(
             llm=llm,
             step_scorer=scorer,
             prompt=start,

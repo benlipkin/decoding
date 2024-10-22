@@ -10,7 +10,7 @@ except ImportError as e:
     raise ImportError(msg) from e
 
 from decoding.estimators import SelfConsistency
-from decoding.generators import BeamSearch
+from decoding.generators import TreeSearch
 from decoding.models import LanguageModel
 from decoding.pmf import CategoricalLogPMF, Sample
 from decoding.scorers import Scorer
@@ -72,7 +72,7 @@ final_scorer = Scorer.from_f_catlogpmf_to_batch_sample(final_score_fn)
 
 
 def run(prompt: str) -> str:
-    return BeamSearch(
+    return TreeSearch(
         prompt=prompt,
         llm=llm,
         step_scorer=step_scorer,

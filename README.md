@@ -51,7 +51,7 @@ There are a number of features coming soon to `decoding`.
 
 ### Monte Carlo Tree Search
 
-Currently in `decoding.experimental` we have initial support for a powerful `MCTS` algorithm. This version has currently been designed to work best with process reward models and other similar scoring functions, as opposed to the full flexibility we provide for `BestOfN` and `BeamSearch` that can e.g., harness grammar constraints or apply sharper scoring functions. As this interface is finalized and documented examples come together, it will be promoted to the fully supported `decoding.generators`.
+Currently in `decoding.experimental` we have initial support for a powerful `RolloutTreeSearch` algorithm. This wraps the `TreeSearch` interface, enabling rollouts within each sync phase and pushing scores back up the tree for reranking. This has currently been designed to work best with process reward models and other similar scoring functions, as opposed to the full flexibility we provide for `BestOfN` and `TreeSearch` that can e.g., harness grammar constraints or apply sharper scoring functions. As this interface is finalized and documented examples come together, it will be promoted to the fully supported `decoding.generators`.
 
 ### Sequantial Monte Carlo / Particle Filtering
 

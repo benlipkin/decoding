@@ -4,9 +4,11 @@ By composing instances of `decoding.models.LanguageModel`, `decoding.scorers.Sco
 and control flow parameters that specify sync, stop, and search conditions, users can
 implement a wide variety of decoding algorithms with very little code.
 
-The `BestOfN` and `BeamSearch` generators are currently fully supported. There is also
-experimental support for `MCTS` in the `decoding.experimental` module. It is also
-on the roadmap to bring twisted `SMC` to the `decoding` library.
+The `BestOfN` and `TreeSearch` generators are currently fully supported. There is also
+experimental support for `RolloutTreeSearch` in the `decoding.experimental` module,
+which supports a simple wrapper interface for a more standard Monte Carlo Tree Search
+(MCTS) algorithm. It is also on the roadmap to bring twisted `SMC` to the
+`decoding` library.
 
 **NB**: The examples below are illustrative of the API, but not particularly useful.
 See the [`examples`](https://github.com/benlipkin/decoding/tree/main/examples)
@@ -121,7 +123,7 @@ def BestOfN(  # noqa: PLR0913
     return sort_samples(samples)
 
 
-def BeamSearch(  # noqa: PLR0913
+def TreeSearch(  # noqa: PLR0913
     *,
     prompt: str,
     llm: LanguageModel,
@@ -190,7 +192,7 @@ def BeamSearch(  # noqa: PLR0913
 
     Examples:
         ```python
-        from decoding.generators import BeamSearch
+        from decoding.generators import TreeSearch
         from decoding.models import LanguageModel
         from decoding.pmf import Sample
         from decoding.scorers import Scorer
@@ -202,7 +204,7 @@ def BeamSearch(  # noqa: PLR0913
 
         llm = LanguageModel.from_id("gpt2")
         scorer = Scorer.from_f_str_to_sample(f)
-        samples = BeamSearch(
+        samples = TreeSearch(
             prompt="The",
             sync_token_ids=" ",
             stop_cond_pass=lambda x: x.endswith("."),
@@ -244,7 +246,7 @@ def BeamSearch(  # noqa: PLR0913
         seed=seed,
         **_default_sampling_kwargs,  # type: ignore[reportArgumentType]
     )
-    samples = _BeamSearch([prompt], llm, step_scorer, search_params, sampling_params)
+    samples = _TreeSearch([prompt], llm, step_scorer, search_params, sampling_params)
     return sort_samples(final_scorer(CategoricalLogPMF.from_samples(samples)))
 
 
@@ -257,7 +259,7 @@ def _BestOfN(
     return scorer(llm(prompts=prompts, params=sampling_params))
 
 
-def _BeamSearch(
+def _TreeSearch(
     prompts: list[str],
     llm: LanguageModel,
     scorer: Scorer,

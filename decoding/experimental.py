@@ -5,7 +5,6 @@ from collections.abc import Callable
 from vllm.sampling_params import LogitsProcessor, SamplingParams
 
 from decoding.generators import (
-    _BeamSearch,  # type: ignore[reportPrivateUsage]
     _default_sampling_kwargs,  # type: ignore[reportPrivateUsage]
     _guard_positive_int,  # type: ignore[reportPrivateUsage]
     _prepare_max_steps,  # type: ignore[reportPrivateUsage]
@@ -13,13 +12,14 @@ from decoding.generators import (
     _prepare_token_ids,  # type: ignore[reportPrivateUsage]
     _prepare_track_logprobs,  # type: ignore[reportPrivateUsage]
     _SearchParams,  # type: ignore[reportPrivateUsage]
+    _TreeSearch,  # type: ignore[reportPrivateUsage]
 )
 from decoding.models import LanguageModel
 from decoding.pmf import CategoricalLogPMF, Sample, make_samples, sort_samples
 from decoding.scorers import Scorer
 
 
-def MCTS(  # noqa: PLR0913
+def RolloutTreeSearch(  # noqa: PLR0913
     *,
     prompt: str,
     llm: LanguageModel,
@@ -64,11 +64,13 @@ def MCTS(  # noqa: PLR0913
         seed=seed,
         **_default_sampling_kwargs,  # type: ignore[reportArgumentType]
     )
-    samples = _MCTS([prompt], llm, step_scorer, search_params, sampling_params)
+    samples = _RolloutTreeSearch(
+        [prompt], llm, step_scorer, search_params, sampling_params
+    )
     return sort_samples(final_scorer(CategoricalLogPMF.from_samples(samples)))
 
 
-def _MCTS(
+def _RolloutTreeSearch(
     prompts: list[str],
     llm: LanguageModel,
     scorer: Scorer,
@@ -87,7 +89,7 @@ def _MCTS(
         utilities = []
         for prompt in prompts:
             try:
-                samples = _BeamSearch(
+                samples = _TreeSearch(
                     [prompt], llm, scorer, _search_params, sampling_params
                 )
             except ValueError:
@@ -96,4 +98,4 @@ def _MCTS(
         return make_samples(prompts, utilities)
 
     _scorer = Scorer.from_f_catlogpmf_to_batch_sample(f)
-    return _BeamSearch(prompts, llm, _scorer, search_params, sampling_params)
+    return _TreeSearch(prompts, llm, _scorer, search_params, sampling_params)
