@@ -106,7 +106,7 @@ def BestOfN(  # noqa: PLR0913
 
     """
     sampling_params = SamplingParams(
-        n=n,
+        n=_guard_positive_int(n),
         min_tokens=min_tokens,
         max_tokens=max_tokens,
         stop=stop_str,
@@ -232,6 +232,7 @@ def TreeSearch(  # noqa: PLR0913
         stop_pass=_prepare_stop(stop_cond_pass),
         stop_fail=_prepare_stop(stop_cond_fail),
     )
+    _validate_search_params(search_params)
     sampling_params = SamplingParams(
         n=_guard_positive_int(beam_factor),
         min_tokens=min_tokens_per_step,
@@ -301,16 +302,22 @@ def _get_token_ids_from_delimiter(*, llm: LanguageModel, delimiter: str) -> list
     _validate_delimiter(delimiter)
     tokenizer = llm.tokenizer
     if isinstance(tokenizer, MistralTokenizer):
-        msg = "vLLM Mistral tokenizer does not currently support `batch_decode`"
+        msg = "vLLM Mistral tokenizer does not currently support `batch_decode`."
         raise NotImplementedError(msg)
     tokens = list(tokenizer.get_vocab().values())
     strs = tokenizer.batch_decode(tokens)
     return [tokens[i] for i, s in enumerate(strs) if delimiter in s]
 
 
+def _validate_search_params(params: _SearchParams) -> None:
+    if params.n > params.width:
+        msg = "`beam_width` cannot be less than `n`."
+        raise ValueError(msg)
+
+
 def _validate_delimiter(delimiter: str) -> None:
     if len(delimiter) != 1:
-        msg = f"Delimiter must be a single character, got: {delimiter}"
+        msg = f"Delimiter must be a single character, got: {delimiter}."
         raise ValueError(msg)
 
 
@@ -338,7 +345,7 @@ def _prepare_track_logprobs(track_logprobs: bool) -> int | None:  # noqa: FBT001
 
 def _guard_positive_int(n: int) -> int:
     if n < 1:
-        msg = f"Expected a positive integer, got: {n}"
+        msg = f"Expected a positive integer, got: {n}."
         raise ValueError(msg)
     return n
 

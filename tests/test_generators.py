@@ -28,6 +28,9 @@ def test_bestofn() -> None:
     msg = "Delimiter must be a single character"
     with pytest.raises(ValueError, match=msg):
         BestOfN(llm=llm, scorer=scorer, prompt=start, stop_token_ids=start)
+    msg = "Expected a positive integer"
+    with pytest.raises(ValueError, match=msg):
+        BestOfN(llm=llm, scorer=scorer, prompt=start, n=-1)
 
 
 def test_treesearch_basic() -> None:
@@ -55,6 +58,29 @@ def test_treesearch_basic() -> None:
     )[0].item
     assert sentence.startswith(start)
     assert end in sentence
+
+    def run_w_kwargs(n: int = 1, beam_width: int = 1, beam_factor: int = 1) -> None:
+        TreeSearch(
+            llm=llm,
+            step_scorer=scorer,
+            prompt=start,
+            stop_cond_pass=stop,
+            n=n,
+            beam_factor=beam_factor,
+            beam_width=beam_width,
+            seed=0,
+        )
+
+    msg = "Expected a positive integer"
+    with pytest.raises(ValueError, match=msg):
+        run_w_kwargs(n=0)
+    with pytest.raises(ValueError, match=msg):
+        run_w_kwargs(beam_width=0)
+    with pytest.raises(ValueError, match=msg):
+        run_w_kwargs(beam_factor=0)
+    msg = "`beam_width` cannot be less than `n`"
+    with pytest.raises(ValueError, match=msg):
+        run_w_kwargs(n=10, beam_width=5)
 
 
 def test_treesearch_step() -> None:
