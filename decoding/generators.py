@@ -277,12 +277,15 @@ def _TreeSearch(
         for sample, passed, failed in zip(beam, stop_pass, stop_fail, strict=True):
             if passed:
                 finished.add(sample)
+                continue
             if failed:
                 continue
             prompts.append(sample.item)
         if len(finished) >= search_params.n:
             return sort_samples(finished)[: search_params.n]
-        beam = _BestOfN(prompts, llm, scorer, sampling_params)[: search_params.width]
+        beam = _BestOfN(prompts, llm, scorer, sampling_params)
+        if len(beam) > search_params.width:
+            beam = beam[: search_params.width]
     return _handle_maxsteps(finished)
 
 
