@@ -24,6 +24,7 @@ _logger = logging.getLogger(__name__)
 _logger.info("Importing vLLM: This may take a moment...")
 
 from vllm import LLM, SamplingParams
+from vllm.inputs import PromptType
 from vllm.outputs import RequestOutput
 from vllm.sequence import Logprob
 from vllm.transformers_utils.tokenizer import AnyTokenizer
@@ -55,6 +56,7 @@ class ModelParams(TypedDict, total=False):
     max_seq_len_to_capture: int
     disable_custom_all_reduce: bool
     disable_async_output_proc: bool
+    enable_prefix_caching: bool
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -269,11 +271,11 @@ def _prepare_prompt_logp(
     raise ValueError(msg)
 
 
-def _guard_prompt_text(x: str | None) -> str:
-    if x is None:
-        msg = "Prompt text should not be None"
-        raise ValueError(msg)
-    return x
+def _guard_prompt_text(x: PromptType | None) -> str:
+    if isinstance(x, str):  # `PromptType` is a union type of `str` and other types
+        return x
+    msg = "Prompt text should be a string"
+    raise ValueError(msg)
 
 
 def _guard_output_logp(x: float | None) -> float:
