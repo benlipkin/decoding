@@ -3,8 +3,10 @@ Language Model interface for text generation and scoring.
 
 This module wraps the vLLM library to provide a simple interface via the
 `LanguageModel` class. The class provides methods for conditionally generating
-strings with `generate` and scoring strings with `surprise`. An easy constructor
-is also provided to load a model by its Hugging Face model ID and manage memory, etc.
+strings with `LanguageModel.generate` and scoring strings with `LanguageModel.surprise`.
+An easy constructor is also provided to load a model by its Hugging Face model ID
+and specify optional parameters for memory management, KV caching, scheduling policy,
+quantization, LORA, speculative decoding, and many other settings.
 """
 
 # ruff: noqa: E402
@@ -12,7 +14,7 @@ is also provided to load a model by its Hugging Face model ID and manage memory,
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TypedDict, TypeGuard, Unpack
+from typing import TypeGuard, Unpack
 
 import jax.numpy as jnp
 
@@ -23,40 +25,11 @@ logging.basicConfig(level=logging.INFO)
 _logger = logging.getLogger(__name__)
 _logger.info("Importing vLLM: This may take a moment...")
 
-from vllm import LLM, SamplingParams
+from vllm import LLM, EngineArgs, SamplingParams
 from vllm.inputs import PromptType
 from vllm.outputs import RequestOutput
 from vllm.sequence import Logprob
 from vllm.transformers_utils.tokenizer import AnyTokenizer
-
-
-class ModelParams(TypedDict, total=False):
-    """
-    Parameters for the LanguageModel constructor. These are optional and
-    correspond to the arguments for initializing
-    [`vllm.LLM`](https://docs.vllm.ai/en/latest/dev/offline_inference/llm.html).
-    See the vLLM documentation for more details.
-    """
-
-    tokenizer: str | None
-    tokenizer_mode: str
-    skip_tokenizer_init: bool
-    trust_remote_code: bool
-    tensor_parallel_size: int
-    dtype: str
-    quantization: str | None
-    revision: str | None
-    tokenizer_revision: str | None
-    seed: int
-    gpu_memory_utilization: float
-    swap_space: float
-    cpu_offload_gb: float
-    enforce_eager: bool | None
-    max_context_len_to_capture: int | None
-    max_seq_len_to_capture: int
-    disable_custom_all_reduce: bool
-    disable_async_output_proc: bool
-    enable_prefix_caching: bool
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -209,14 +182,18 @@ class LanguageModel:
     def from_id(
         cls,
         model_id: str,
-        **model_kwargs: Unpack[ModelParams],
+        **model_kwargs: Unpack[EngineArgs],  # type: ignore[reportGeneralTypeIssues]
     ) -> "LanguageModel":
         """
         Load a language model by its Hugging Face model ID.
 
         Args:
             model_id: The Hugging Face model ID.
-            model_kwargs: Optional parameters for the model constructor.
+            **model_kwargs: Optional parameters for the model constructor. These are
+                passed to the [`vllm.LLM`](https://docs.vllm.ai/en/stable/dev/offline_inference/llm.html)
+                constructor, and through there to [`vllm.EngineArgs`](https://docs.vllm.ai/en/stable/models/engine_args.html).
+                Check the linked vLLM documentation for more details on what parameters
+                are available.
 
         Returns:
             A `LanguageModel` instance.
@@ -225,7 +202,9 @@ class LanguageModel:
             ```python
             from decoding.models import LanguageModel
 
-            llm = LanguageModel.from_id("gpt2", gpu_memory_utilization=0.5)
+            llm = LanguageModel.from_id(
+                "gpt2", gpu_memory_utilization=0.5, enable_prefix_caching=True
+            )
             assert llm.tokenizer.name_or_path == "gpt2"
             ```
 
