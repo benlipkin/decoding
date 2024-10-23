@@ -9,8 +9,12 @@ from decoding.generators import BestOfN
 from decoding.models import LanguageModel
 from decoding.scorers import Scorer
 
-llm_small = LanguageModel.from_id("allenai/OLMo-1B-hf", gpu_memory_utilization=0.2)
-llm_large = LanguageModel.from_id("allenai/OLMo-7B-hf", gpu_memory_utilization=0.6)
+llm_small = LanguageModel.from_id(
+    "allenai/OLMo-1B-hf", gpu_memory_utilization=0.2, enable_prefix_caching=True
+)
+llm_large = LanguageModel.from_id(
+    "allenai/OLMo-7B-hf", gpu_memory_utilization=0.6, enable_prefix_caching=True
+)
 
 
 def score_fn(prompts: Sequence[str]) -> list[float]:
