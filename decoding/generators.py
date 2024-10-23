@@ -155,26 +155,26 @@ def TreeSearch(  # noqa: PLR0913
         step_scorer: The scorer to rank the samples at each sync step.
         final_scorer: The scorer to rank the final beam.
         stop_cond_pass: A function that returns `True` if the sample should pass.
-            This adds a sample to the final beam.
+            This stops the sample from being extended.
         stop_cond_fail: A function that returns `True` if the sample should fail.
-            This filters the sample from the active beam.
+            This filters the sample from the live beam.
         n: The number of passing samples to generate before returning.
-        beam_width: The width of the active beam. This is the number of samples to
+        beam_width: The width of the beam. This is the number of samples to
             keep at each step.
-        beam_factor: The branching factor of the active beam. This is the number of
-            new samples to generate from each active sample at each sync step.
+        beam_factor: The branching factor of the beam. This is the number of
+            new samples to generate from each live sample at each sync step.
         max_steps: The maximum number of sync steps to take.
         min_tokens_per_step: The minimum number of tokens in each step's extension.
         max_tokens_per_step: The maximum number of tokens in each step's extension.
-        sync_str: A string or list of strings that, if generated, will stop each sample
-            in the active beam and await the sync step scoring, ranking, and filtering.
-        sync_token_ids: A list of token IDs that, if generated, will stop each sample
-            in the active beam and await the sync step scoring, ranking, and filtering.
+        sync_str: A string or list of strings that, if generated, will stop extending
+            each sample in the live beam and await scoring, ranking, and filtering.
+        sync_token_ids: A list of token IDs that, if generated, will stop extending
+            each sample in the live beam and await scoring, ranking, and filtering.
             A string can also be passed, which will specify all token IDs that contain
             that substring.
         include_sync_str_in_output: Whether to include the stop string in the output.
         track_logprobs: Whether to track log probabilities. This comes at a performance
-            cost, so it is off by default. In most cases, as you are alrady sampling
+            cost, so it is off by default. In most cases, as you are already sampling
             from the model, you do not want to double count the probabilities in the
             scorer anyways.
         temperature: The temperature for sampling.
@@ -187,7 +187,7 @@ def TreeSearch(  # noqa: PLR0913
 
     Raises:
         ValueError: If any of the argument configurations are invalid
-        RuntimeError: if all active samples in the beam fail,
+        RuntimeError: if all live samples in the beam fail,
             or if max steps is reached before any samples pass.
 
     Examples:
@@ -268,26 +268,28 @@ def _TreeSearch(
     sampling_params: SamplingParams,
 ) -> list[Sample[str]]:
     beam = [Sample(item=p, utility=-float("inf")) for p in prompts]
-    finished = set()
+    passing = []
     for _ in range(search_params.max_steps):
-        prompts = []
         stop_pass = [search_params.stop_pass(s.item) for s in beam]
         stop_fail = [search_params.stop_fail(s.item) for s in beam]
-        if all(stop_fail):
-            return _handle_failed_beam(finished)
+        passing = []
+        prompts = []
         for sample, passed, failed in zip(beam, stop_pass, stop_fail, strict=True):
-            if passed:
-                finished.add(sample)
-                continue
-            if failed:
-                continue
-            prompts.append(sample.item)
-        if len(finished) >= search_params.n:
-            return sort_samples(finished)[: search_params.n]
-        beam = _BestOfN(prompts, llm, scorer, sampling_params)
+            if passed and not failed:
+                passing.append(sample)
+            elif not failed:
+                prompts.append(sample.item)
+            else:  # failed
+                pass
+        if len(passing) >= search_params.n:
+            return sort_samples(passing)[: search_params.n]
+        if len(prompts) == 0:
+            return _handle_failed_beam(passing)
+        live = _BestOfN(prompts, llm, scorer, sampling_params)
+        beam = passing + live
         if len(beam) > search_params.width:
-            beam = beam[: search_params.width]
-    return _handle_maxsteps(finished)
+            beam = sort_samples(beam)[: search_params.width]
+    return _handle_maxsteps(passing)
 
 
 def _prepare_token_ids(
@@ -350,27 +352,31 @@ def _guard_positive_int(n: int) -> int:
     return n
 
 
-def _handle_failed_beam(finished: set[Sample[str]]) -> list[Sample[str]]:
-    if len(finished) == 0:
-        msg = "All live samples failed."
+def _handle_failed_beam(passing: list[Sample[str]]) -> list[Sample[str]]:
+    if len(passing) == 0:
+        msg = "All live samples failed before any passed stop conditions."
         msg += " Check compatibility of stop conditions or expand search."
         raise RuntimeError(msg)
     import warnings
 
-    msg = "All live samples failed. Returning available finished samples."
+    msg = "All live samples failed before completing search,"
+    msg += " but some completed samples have already passed stopping conditions."
+    msg += " Returning available passing samples."
     warnings.warn(msg, stacklevel=2)
-    return sort_samples(finished)
+    return sort_samples(passing)
 
 
-def _handle_maxsteps(finished: set[Sample[str]]) -> list[Sample[str]]:
-    if len(finished) == 0:
+def _handle_maxsteps(passing: list[Sample[str]]) -> list[Sample[str]]:
+    if len(passing) == 0:
         msg = "Max steps reached, and no samples passed stop conditions."
         raise RuntimeError(msg)
     import warnings
 
-    msg = "Max steps reached. Returning available finished samples."
+    msg = "Max steps reached before completing search,"
+    msg += "but some samples have already passed stopping conditions."
+    msg += " Returning available passing samples."
     warnings.warn(msg, stacklevel=2)
-    return sort_samples(finished)
+    return sort_samples(passing)
 
 
 _default_sampling_kwargs = {

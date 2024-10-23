@@ -213,7 +213,7 @@ def run(prompt: str) -> list[Sample[str]]:
         stop_cond_pass=stop_pass,
         sync_str=sync_str,
         n=10, # number of complete samples to search for
-        beam_width=20, # size of active beam to maintain
+        beam_width=25, # size of beam to maintain
         beam_factor=5, # number of ways to split each particle at each step
         seed=42,
     )

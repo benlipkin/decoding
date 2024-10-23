@@ -79,7 +79,7 @@ def run(prompt: str) -> str:
         final_scorer=final_scorer,
         stop_cond_pass=stop_pass,
         n=10,
-        beam_width=20,
+        beam_width=25,
         beam_factor=5,
         sync_str="\n",
         seed=42,

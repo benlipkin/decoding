@@ -38,11 +38,13 @@ def test_treesearch_basic() -> None:
     delim = " "
     end = "."
 
-    def utility(s: str) -> int:
-        return -len(s)
-
     def stop(s: str) -> bool:
         return end in s
+
+    def utility(s: str) -> int:
+        if stop(s):
+            return 1
+        return -len(s)
 
     scorer = Scorer.from_f_str_to_num(utility)
     sentence = TreeSearch(
@@ -88,7 +90,12 @@ def test_treesearch_step() -> None:
     delim = " "
     end = "."
 
+    def stop(s: str) -> bool:
+        return end in s
+
     def utility_step(s: str) -> int:
+        if stop(s):
+            return 1
         ws = s.split(delim)
         check_words = 2
         if len(ws) < check_words:
@@ -97,9 +104,6 @@ def test_treesearch_step() -> None:
 
     def utility_final(s: str) -> int:
         return -len(s)
-
-    def stop(s: str) -> bool:
-        return end in s
 
     step_scorer = Scorer.from_f_str_to_num(utility_step)
     final_scorer = Scorer.from_f_str_to_num(utility_final)
@@ -125,14 +129,16 @@ def test_treesearch_fail() -> None:
     delim = " "
     end = "."
 
+    def stop(s: str) -> bool:
+        return end in s
+
     def utility(s: str) -> int:
+        if stop(s):
+            return 1
         return -len(s)
 
     def fail(s: str) -> bool:
         return len(s) > max_len_constraint
-
-    def stop(s: str) -> bool:
-        return end in s
 
     scorer = Scorer.from_f_str_to_num(utility)
 
@@ -157,7 +163,7 @@ def test_treesearch_fail() -> None:
     assert end in sentence
 
     n_requested = 5
-    msg = "All live samples failed. Returning available finished samples."
+    msg = "All live samples failed before completing search"
     with pytest.warns(UserWarning, match=msg):
         out = beam_search(n_requested, 30, 6)
     assert 0 < len(out) < n_requested
@@ -165,8 +171,7 @@ def test_treesearch_fail() -> None:
     assert all(s.item.startswith(start) for s in out)
     assert all(end in s.item for s in out)
 
-    msg = "All live samples failed."
-    msg += " Check compatibility of stop conditions or expand search."
+    msg = "All live samples failed before any passed stop conditions"
     with pytest.raises(RuntimeError, match=msg):
         beam_search(1, 30, 2)
 
@@ -176,13 +181,16 @@ def test_treesearch_maxsteps() -> None:
     delim = " "
     end = "."
 
-    def utility(s: str) -> int:
-        return -len(s)
-
     def stop(s: str) -> bool:
         return end in s
 
+    def utility(s: str) -> int:
+        if stop(s):
+            return 1
+        return -len(s)
+
     scorer = Scorer.from_f_str_to_num(utility)
+    n_requested = 3
 
     def beam_search(max_steps: int) -> list[Sample[str]]:
         return TreeSearch(
@@ -192,7 +200,7 @@ def test_treesearch_maxsteps() -> None:
             sync_token_ids=delim,
             stop_cond_pass=stop,
             max_steps=max_steps,
-            n=3,
+            n=n_requested,
             beam_width=30,
             beam_factor=6,
             seed=0,
@@ -200,16 +208,17 @@ def test_treesearch_maxsteps() -> None:
 
     out = beam_search(5)
     sentence = out[0].item
+    assert len(out) == n_requested
     assert sentence.startswith(start)
     assert end in sentence
 
-    msg = "Max steps reached. Returning available finished samples."
+    msg = "Max steps reached before completing search"
     with pytest.warns(UserWarning, match=msg):
         out = beam_search(3)
     assert all(s.item.startswith(start) for s in out)
     assert all(end in s.item for s in out)
 
-    msg = "Max steps reached, and no samples passed stop conditions."
+    msg = "Max steps reached, and no samples passed stop conditions"
     with pytest.raises(RuntimeError, match=msg):
         beam_search(1)
 
