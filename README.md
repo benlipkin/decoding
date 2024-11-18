@@ -11,7 +11,7 @@ Composable inference algorithms with LLMs and programmable logic.
 
 ### Why should I care?
 
-Scaling inference thoughtfully is where the next breakthrough gains will come in the world of LLMs. We are already seeing small models out-perform models >10x their size by leveraging basic sampling and search strategies, particularly in combination with custom verifiers, scoring functions, and process reward models. See [Wu et al., 2024](https://arxiv.org/abs/2408.00724) and [Snell et al., 2024](https://arxiv.org/abs/2408.03314) for recent public evidence. `decoding` makes it effortless to explore this design space and allows researchers to quickly iterate on their ideas.
+Scaling inference thoughtfully is yielding breakthrough performance improvements in the world of LLMs. We are already seeing small models out-perform models >10x their size by leveraging basic sampling and search strategies, particularly in combination with custom verifiers, scoring functions, and process reward models. Check out this excellent recent [presentation](https://srush.github.io/awesome-o1/o1-tutorial.pdf) by Sasha Rush and Daniel Ritter for more background. `decoding` makes it effortless to explore this design space and allows researchers to quickly iterate on their ideas.
 
 ## Getting started
 
@@ -75,7 +75,6 @@ Before opening a PR, make sure all tests are passing:
 ```bash
 make tests
 ```
-
 
 ## Citation
 
