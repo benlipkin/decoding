@@ -1,5 +1,5 @@
 """
-Miscellaneous utility functions.
+Miscellaneous helper functions.
 """
 
 import secrets

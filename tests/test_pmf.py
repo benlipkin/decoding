@@ -57,7 +57,7 @@ def test_categoricallogpmf() -> None:
     with pytest.raises(FrozenInstanceError, match="cannot assign to field 'cats'"):
         d.cats = None  # type: ignore[reportAttributeAccessIssue]
     msg = re.escape(
-        "Samples must be `Sequence[T]` or `Sequence[Sample[T]]` and nonempty"
+        "Samples must be `Sequence[T]` or `Sequence[ScoredItem[T]]` and nonempty"
     )
     with pytest.raises(ValueError, match=msg):
         CategoricalLogPMF.from_samples(samples=[])

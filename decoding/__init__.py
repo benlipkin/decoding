@@ -14,13 +14,13 @@ Core modules:
     that can be used to sample controlled text from LMs.
 
 Supporting modules:
-- `decoding.pmf`: Data structures for working with probability mass functions
-    and methods for calculating information-theoretic quantities.
+- `decoding.pmf`: Data structures for probability mass functions and other collections
+    of measures as well as algorithms for calculating information-theoretic quantities.
 - `decoding.samplers`: Methods for sampling from distributions.
 - `decoding.estimators`: Decision rules for deriving point estimates from distributions.
     Supports a flexible Minimum Bayes Risk (MBR) interface that accepts arbitrary
     user-defined utility functions.
-- `decoding.metrics`: Metrics that may be useful for constructing utility functions.
+- `decoding.metrics`: Metrics that may be useful for constructing scoring functions.
 - `decoding.utils`: Miscellaneous helper functions for the library.
 """
 

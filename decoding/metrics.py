@@ -1,5 +1,5 @@
 """
-Miscellaneous metrics that may be useful building blocks for utility functions.
+Miscellaneous metrics that may be useful building blocks for scoring functions.
 """
 
 from collections.abc import Sequence

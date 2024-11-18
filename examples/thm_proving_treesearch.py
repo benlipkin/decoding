@@ -12,7 +12,7 @@ except ImportError as e:
 from decoding.estimators import SelfConsistency
 from decoding.generators import TreeSearch
 from decoding.models import LanguageModel
-from decoding.pmf import CategoricalLogPMF, Sample
+from decoding.pmf import CategoricalLogPMF, ScoredItem
 from decoding.scorers import Scorer
 
 llm = LanguageModel.from_id(
@@ -24,23 +24,23 @@ parser = LogicParser()
 prover = TableauProver()
 
 
-def step_score_fn(s: str) -> Sample[str]:
+def step_score_fn(s: str) -> ScoredItem[str]:
     if stop_pass(s):
-        return Sample(item=s, utility=float("inf"))
+        return ScoredItem(item=s, score=float("inf"))
     lines = s.strip().split("\n")
     last_line = lines[-1]
     if last_line.startswith(("P:", "C:")):
         stmt = last_line[2:]
         try:
             parser.parse(stmt)
-            return Sample(item=s, utility=len(lines))
+            return ScoredItem(item=s, score=len(lines))
         except LogicalExpressionException:
             pass
     backtrack = "\n".join(lines[:-1]) + "\n"
-    return Sample(item=backtrack, utility=len(lines) - 1)
+    return ScoredItem(item=backtrack, score=len(lines) - 1)
 
 
-def final_score_fn(d: CategoricalLogPMF[str]) -> list[Sample[str]]:
+def final_score_fn(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
     def postproc(gen: str) -> str:
         try:
             new = gen[len(prompt) - 2 :]
@@ -67,8 +67,8 @@ def stop_pass(s: str) -> bool:
     return s.endswith("\n\n")
 
 
-step_scorer = Scorer.from_f_str_to_sample(step_score_fn, parallelize=True)
-final_scorer = Scorer.from_f_catlogpmf_to_batch_sample(final_score_fn)
+step_scorer = Scorer.from_f_str_to_item(step_score_fn, parallelize=True)
+final_scorer = Scorer.from_f_logpmf_to_batch_item(final_score_fn)
 
 
 def run(prompt: str) -> str:

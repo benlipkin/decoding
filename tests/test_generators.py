@@ -2,7 +2,7 @@ import pytest
 
 from decoding.generators import BestOfN, TreeSearch
 from decoding.models import LanguageModel
-from decoding.pmf import Sample
+from decoding.pmf import ScoredItem
 from decoding.scorers import Scorer
 
 llm = LanguageModel.from_id("EleutherAI/pythia-70m", gpu_memory_utilization=0.2)
@@ -11,10 +11,10 @@ llm = LanguageModel.from_id("EleutherAI/pythia-70m", gpu_memory_utilization=0.2)
 def test_bestofn() -> None:
     start = "The"
 
-    def utility(s: str) -> int:
+    def score(s: str) -> int:
         return -len(s)
 
-    scorer = Scorer.from_f_str_to_num(utility)
+    scorer = Scorer.from_f_str_to_num(score)
     sentences = {}
     for n in [1, 10, 100]:
         samples = BestOfN(
@@ -23,7 +23,7 @@ def test_bestofn() -> None:
         sentences[n] = samples[0].item
     assert all(s.startswith("The") for s in sentences.values())
     assert all(s.endswith(".") for s in sentences.values())
-    assert utility(sentences[100]) > utility(sentences[10]) > utility(sentences[1])
+    assert score(sentences[100]) > score(sentences[10]) > score(sentences[1])
 
     msg = "Delimiter must be a single character"
     with pytest.raises(ValueError, match=msg):
@@ -41,12 +41,12 @@ def test_treesearch_basic() -> None:
     def stop(s: str) -> bool:
         return end in s
 
-    def utility(s: str) -> int:
+    def score(s: str) -> int:
         if stop(s):
             return 1
         return -len(s)
 
-    scorer = Scorer.from_f_str_to_num(utility)
+    scorer = Scorer.from_f_str_to_num(score)
     sentence = TreeSearch(
         llm=llm,
         step_scorer=scorer,
@@ -93,7 +93,7 @@ def test_treesearch_step() -> None:
     def stop(s: str) -> bool:
         return end in s
 
-    def utility_step(s: str) -> int:
+    def score_step(s: str) -> int:
         if stop(s):
             return 1
         ws = s.split(delim)
@@ -102,11 +102,11 @@ def test_treesearch_step() -> None:
             return -len(s)
         return -(len(ws[-2]) + len(ws[-1]))
 
-    def utility_final(s: str) -> int:
+    def score_final(s: str) -> int:
         return -len(s)
 
-    step_scorer = Scorer.from_f_str_to_num(utility_step)
-    final_scorer = Scorer.from_f_str_to_num(utility_final)
+    step_scorer = Scorer.from_f_str_to_num(score_step)
+    final_scorer = Scorer.from_f_str_to_num(score_final)
     sentence = TreeSearch(
         llm=llm,
         step_scorer=step_scorer,
@@ -132,7 +132,7 @@ def test_treesearch_fail() -> None:
     def stop(s: str) -> bool:
         return end in s
 
-    def utility(s: str) -> int:
+    def score(s: str) -> int:
         if stop(s):
             return 1
         return -len(s)
@@ -140,9 +140,9 @@ def test_treesearch_fail() -> None:
     def fail(s: str) -> bool:
         return len(s) > max_len_constraint
 
-    scorer = Scorer.from_f_str_to_num(utility)
+    scorer = Scorer.from_f_str_to_num(score)
 
-    def beam_search(n: int, beam_width: int, beam_factor: int) -> list[Sample[str]]:
+    def beam_search(n: int, beam_width: int, beam_factor: int) -> list[ScoredItem[str]]:
         return TreeSearch(
             llm=llm,
             step_scorer=scorer,
@@ -184,15 +184,15 @@ def test_treesearch_maxsteps() -> None:
     def stop(s: str) -> bool:
         return end in s
 
-    def utility(s: str) -> int:
+    def score(s: str) -> int:
         if stop(s):
             return 1
         return -len(s)
 
-    scorer = Scorer.from_f_str_to_num(utility)
+    scorer = Scorer.from_f_str_to_num(score)
     n_requested = 3
 
-    def beam_search(max_steps: int) -> list[Sample[str]]:
+    def beam_search(max_steps: int) -> list[ScoredItem[str]]:
         return TreeSearch(
             llm=llm,
             step_scorer=scorer,

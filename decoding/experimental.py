@@ -15,7 +15,7 @@ from decoding.generators import (
     _TreeSearch,  # type: ignore[reportPrivateUsage]
 )
 from decoding.models import LanguageModel
-from decoding.pmf import CategoricalLogPMF, Sample, make_samples, sort_samples
+from decoding.pmf import CategoricalLogPMF, ScoredItem, make_samples, sort_samples
 from decoding.scorers import Scorer
 
 
@@ -40,7 +40,7 @@ def RolloutTreeSearch(  # noqa: PLR0913
     temperature: float = 1.0,
     logits_processors: list[LogitsProcessor] | None = None,
     seed: int | None = None,
-) -> list[Sample[str]]:
+) -> list[ScoredItem[str]]:
     if final_scorer is None:
         final_scorer = step_scorer
     search_params = _SearchParams(
@@ -76,8 +76,8 @@ def _RolloutTreeSearch(
     scorer: Scorer,
     search_params: _SearchParams,
     sampling_params: SamplingParams,
-) -> list[Sample[str]]:
-    def f(d: CategoricalLogPMF[str]) -> list[Sample[str]]:
+) -> list[ScoredItem[str]]:
+    def f(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
         _search_params = _SearchParams(
             n=1,
             width=search_params.width,
@@ -86,16 +86,16 @@ def _RolloutTreeSearch(
             stop_fail=search_params.stop_fail,
         )
         prompts = list(d.cats)
-        utilities = []
+        scores = []
         for prompt in prompts:
             try:
                 samples = _TreeSearch(
                     [prompt], llm, scorer, _search_params, sampling_params
                 )
             except ValueError:
-                samples = [Sample(item=prompt, utility=-float("inf"))]
-            utilities.append(samples[0].utility)
-        return make_samples(prompts, utilities)
+                samples = [ScoredItem(item=prompt, score=-float("inf"))]
+            scores.append(samples[0].score)
+        return make_samples(prompts, scores)
 
-    _scorer = Scorer.from_f_catlogpmf_to_batch_sample(f)
+    _scorer = Scorer.from_f_logpmf_to_batch_item(f)
     return _TreeSearch(prompts, llm, _scorer, search_params, sampling_params)

@@ -2,9 +2,9 @@
 Methods for calculating point estimates from distributions.
 
 Estimators in this module operate over an instance of `decoding.pmf.CategoricalLogPMF`
-and return a list of `decoding.pmf.Sample` instances sorted by their utility. Each
-`decoding.pmf.Sample` instance contains an `item` and `utility` field. More about these
-data structures can be found in the `decoding.pmf` module.
+and return a list of `decoding.pmf.ScoredItem` instances sorted by their expected
+utility. Each `decoding.pmf.ScoredItem` instance contains an `item` and `score` field.
+More about these data structures can be found in the `decoding.pmf` module.
 
 The estimators in this module reflect variants of the Minimum Bayes Risk (MBR). The MBR
 is a decision-theoretic approach to point estimation that minimizes the expected loss
@@ -12,7 +12,7 @@ of a decision rule. This module provides efficient implementations of MBR that a
 for the properties of arbitrary user-provided utility functions.
 
 The module also provides a `MAP` estimator, which is a special case of `MBR` where the
-utility function is a constant function, and a `SelfConsistency` estimator, which
+utility function is the identity function, and a `SelfConsistency` estimator, which
 applies a post-processing and filtering step before aggregating the resulting samples
 via a majority voting procedure.
 """
@@ -24,7 +24,7 @@ from functools import cache
 
 import jax.numpy as jnp
 
-from decoding.pmf import CategoricalLogPMF, Sample, make_samples, sort_samples
+from decoding.pmf import CategoricalLogPMF, ScoredItem, make_samples, sort_samples
 from decoding.types import FS, NUM, T_, T
 
 
@@ -33,7 +33,7 @@ def MBR(
     *,
     utility: Callable[[T, T], NUM],
     parallelize: bool = False,
-) -> list[Sample[T]]:
+) -> list[ScoredItem[T]]:
     """
     Calculate the Minimum Bayes Risk (MBR) estimator for a given distribution
     and arbitrary user-provided utility function.
@@ -44,7 +44,7 @@ def MBR(
         parallelize: Whether to parallelize the utility calculation.
 
     Returns:
-        A sorted list of `decoding.pmf.Sample` instances by their utility.
+        A sorted list of `decoding.pmf.ScoredItem` instances by their expected utility.
 
     Example:
         ```python
@@ -69,7 +69,7 @@ def commutativeMBR(
     *,
     utility: Callable[[T, T], NUM],
     parallelize: bool = False,
-) -> list[Sample[T]]:
+) -> list[ScoredItem[T]]:
     """
     Variant of `MBR` for commutative utility functions.
     By exploiting the commutative property of the utility function, this
@@ -81,7 +81,7 @@ def commutativeMBR(
         parallelize: Whether to parallelize the utility calculation.
 
     Returns:
-        A sorted list of `decoding.pmf.Sample` instances by their utility.
+        A sorted list of `decoding.pmf.ScoredItem` instances by their expected utility.
 
     Example:
         ```python
@@ -112,7 +112,7 @@ def linearMBR(
     *,
     utility: Callable[[T], NUM],
     parallelize: bool = False,
-) -> list[Sample[T]]:
+) -> list[ScoredItem[T]]:
     """
     Variant of `MBR` for cases that can be executed in linear time.
     By exploiting utility functions that operate only on individual elements,
@@ -124,7 +124,7 @@ def linearMBR(
         parallelize: Whether to parallelize the utility calculation.
 
     Returns:
-        A sorted list of `decoding.pmf.Sample` instances by their utility.
+        A sorted list of `decoding.pmf.ScoredItem` instances by their expected utility.
 
     Example:
         ```python
@@ -144,7 +144,7 @@ def linearMBR(
     return _MBR(d, _risk, parallelize=parallelize)
 
 
-def MAP(d: CategoricalLogPMF[T], *, parallelize: bool = False) -> list[Sample[T]]:
+def MAP(d: CategoricalLogPMF[T], *, parallelize: bool = False) -> list[ScoredItem[T]]:
     """
     Calculate the Maximum A Posteriori (MAP) estimator for a given distribution.
 
@@ -153,7 +153,7 @@ def MAP(d: CategoricalLogPMF[T], *, parallelize: bool = False) -> list[Sample[T]
         parallelize: Whether to parallelize the utility calculation.
 
     Returns:
-        A sorted list of `decoding.pmf.Sample` instances by their utility.
+        A sorted list of `decoding.pmf.ScoredItem` instances by their expected utility.
 
     Example:
         ```python
@@ -179,7 +179,7 @@ def SelfConsistency(
     postproc: Callable[[T], T_],
     filt: Callable[[T_], bool],
     parallelize: bool = False,
-) -> list[Sample[T_]]:
+) -> list[ScoredItem[T_]]:
     """
     Calculate the Self-Consistency estimator for a given distribution, after applying
     a post-processing and filtering step.
@@ -191,7 +191,7 @@ def SelfConsistency(
         parallelize: Whether to parallelize the utility calculation.
 
     Returns:
-        A sorted list of `decoding.pmf.Sample` instances by their utility.
+        A sorted list of `decoding.pmf.ScoredItem` instances by their expected utility.
 
     Example:
         ```python
@@ -207,16 +207,16 @@ def SelfConsistency(
     _postproc = cache(postproc)
 
     def _aggregate(
-        samples: list[Sample[T]],
+        samples: list[ScoredItem[T]],
         _postproc: Callable[[T], T_],
         filt: Callable[[T_], bool],
-    ) -> list[Sample[T_]]:
+    ) -> list[ScoredItem[T_]]:
         ht = defaultdict(lambda: 0.0)
         for sample in samples:
             c = _postproc(sample.item)
             if filt(c):
-                ht[c] += float(sample.utility)
-        return sort_samples([Sample(item=c, utility=u) for c, u in ht.items()])
+                ht[c] += float(sample.score)
+        return sort_samples([ScoredItem(item=c, score=u) for c, u in ht.items()])
 
     def _utility(c1: T, c2: T) -> int:
         return int(_postproc(c1) == _postproc(c2))
@@ -227,7 +227,7 @@ def SelfConsistency(
 
 def _MBR(
     d: CategoricalLogPMF[T], risk: Callable[[T], FS], *, parallelize: bool = False
-) -> list[Sample[T]]:
+) -> list[ScoredItem[T]]:
     def _calc_utility(logp: FS, c1: T) -> float:
         return -float(risk(c1) * jnp.exp(logp))
 

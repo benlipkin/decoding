@@ -6,9 +6,9 @@ probability mass functions (PMFs) in log-space. It also provides functions for
 calculating various information-theoretic quantities, such as `surprise`, `entropy`,
 `kl_divergence`, `cross_entropy`, etc.
 
-The module also provides a `Sample` dataclass, instances of which are used to
-store an `item` and its `utility` (e.g., a score, probability, or other measure).
-There are also functions for creating and sorting lists of `Sample` instances.
+The module also provides a `ScoredItem` dataclass, instances of which are used to
+store an `item` and its `score` (e.g., a utility, probability, or other measure).
+There are also functions for creating and sorting lists of `ScoredItem` instances.
 """
 
 from collections import Counter
@@ -25,79 +25,79 @@ from decoding.utils import logsoftmax
 
 
 @dataclass(frozen=True, kw_only=True)
-class Sample(Generic[T]):
+class ScoredItem(Generic[T]):
     """
-    Dataclass for storing an item and its utility.
+    Dataclass for storing an item and its score.
 
     Attributes:
         item: The item to be stored.
-        utility: The utility of the item
+        score: The score of the item.
 
     Example:
         ```python
-        from decoding.pmf import Sample
+        from decoding.pmf import ScoredItem
 
-        s = Sample(item="a", utility=0.5)
+        s = ScoredItem(item="a", score=0.5)
         assert s.item == "a"
-        assert s.utility == 0.5
+        assert s.score == 0.5
         ```
 
     """
 
     item: T
-    utility: NUM
+    score: NUM
 
 
-def sort_samples(samples: Iterable[Sample[T]]) -> list[Sample[T]]:
+def sort_samples(samples: Iterable[ScoredItem[T]]) -> list[ScoredItem[T]]:
     """
-    Sort a list of `Sample` instances by utility in descending order.
+    Sort a list of `ScoredItem` instances by score in descending order.
 
     Args:
-        samples: An iterable of `Sample` instances.
+        samples: An iterable of `ScoredItem` instances.
 
     Returns:
-        A list of `Sample` instances sorted by utility in descending order.
+        A list of `ScoredItem` instances sorted by score in descending order.
 
     Example:
         ```python
-        from decoding.pmf import Sample, sort_samples
+        from decoding.pmf import ScoredItem, sort_samples
 
         samples = [
-            Sample(item="a", utility=0.5),
-            Sample(item="b", utility=0.3),
-            Sample(item="c", utility=0.7),
+            ScoredItem(item="a", score=0.5),
+            ScoredItem(item="b", score=0.3),
+            ScoredItem(item="c", score=0.7),
         ]
         sorted_samples = sort_samples(samples)
-        assert sorted_samples[0] == Sample(item="c", utility=0.7)
+        assert sorted_samples[0] == ScoredItem(item="c", score=0.7)
         ```
 
     """
-    return sorted(samples, key=lambda x: float(x.utility), reverse=True)
+    return sorted(samples, key=lambda x: float(x.score), reverse=True)
 
 
-def make_samples(items: Sequence[T], utilities: Sequence[NUM]) -> list[Sample[T]]:
+def make_samples(items: Sequence[T], scores: Sequence[NUM]) -> list[ScoredItem[T]]:
     """
-    Create a list of `Sample` instances from a list of items and utilities.
+    Create a list of `ScoredItem` instances from a list of items and scores.
 
     Args:
         items: A sequence of items to be stored.
-        utilities: A sequence of utilities for the items.
+        scores: A sequence of scores for the items.
 
     Returns:
-        A list of `Sample` instances.
+        A list of `ScoredItem` instances.
 
     Example:
         ```python
         from decoding.pmf import make_samples
 
         items = ["a", "b", "c"]
-        utilities = [0.5, 0.3, 0.7]
-        samples = make_samples(items, utilities)
-        assert samples[0] == Sample(item="a", utility=0.5)
+        scores = [0.5, 0.3, 0.7]
+        samples = make_samples(items, scores)
+        assert samples[0] == ScoredItem(item="a", score=0.5)
         ```
 
     """
-    return [Sample(item=i, utility=u) for i, u in zip(items, utilities, strict=True)]
+    return [ScoredItem(item=i, score=u) for i, u in zip(items, scores, strict=True)]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -207,21 +207,21 @@ class CategoricalLogPMF(Generic[T]):
 
     @classmethod
     def from_samples(
-        cls, samples: Sequence[T] | Sequence[Sample[T]]
+        cls, samples: Sequence[T] | Sequence[ScoredItem[T]]
     ) -> "CategoricalLogPMF[T]":
         """
         Create a `CategoricalLogPMF` instance from a list of items
-        or a list of `Sample` instances.
+        or a list of `ScoredItem` instances.
 
         Args:
-            samples: A sequence of items or `Sample` instances.
+            samples: A sequence of items or `ScoredItem` instances.
 
         Returns:
             A `CategoricalLogPMF` instance.
 
         Example:
             ```python
-            from decoding.pmf import CategoricalLogPMF, Sample
+            from decoding.pmf import CategoricalLogPMF, ScoredItem
 
             samples = ["a", "b", "a", "c"]
             d = CategoricalLogPMF.from_samples(samples)
@@ -432,25 +432,25 @@ def js_distance(d_p: CategoricalLogPMF[T], d_q: CategoricalLogPMF[T]) -> FS:
     return jnp.sqrt(js_divergence(d_p, d_q))
 
 
-def _prepare_items(samples: Sequence[T] | Sequence[Sample[T]]) -> Sequence[T]:
+def _prepare_items(samples: Sequence[T] | Sequence[ScoredItem[T]]) -> Sequence[T]:
     if _guard_sample_seq(samples):
         return [s.item for s in samples]
     if _guard_item_seq(samples):
         return samples
-    msg = "Samples must be `Sequence[T]` or `Sequence[Sample[T]]` and nonempty"
+    msg = "Samples must be `Sequence[T]` or `Sequence[ScoredItem[T]]` and nonempty"
     raise ValueError(msg)
 
 
 def _guard_sample_seq(
-    samples: Sequence[T] | Sequence[Sample[T]],
-) -> TypeGuard[Sequence[Sample[T]]]:
+    samples: Sequence[T] | Sequence[ScoredItem[T]],
+) -> TypeGuard[Sequence[ScoredItem[T]]]:
     if len(samples) == 0:
         return False
-    return isinstance(samples[0], Sample)
+    return isinstance(samples[0], ScoredItem)
 
 
 def _guard_item_seq(
-    samples: Sequence[T] | Sequence[Sample[T]],
+    samples: Sequence[T] | Sequence[ScoredItem[T]],
 ) -> TypeGuard[Sequence[T]]:
     return len(samples) > 0
 

@@ -22,7 +22,7 @@ from vllm.sampling_params import LogitsProcessor, SamplingParams
 from vllm.transformers_utils.tokenizers import MistralTokenizer
 
 from decoding.models import LanguageModel
-from decoding.pmf import CategoricalLogPMF, Sample, sort_samples
+from decoding.pmf import CategoricalLogPMF, ScoredItem, sort_samples
 from decoding.scorers import Scorer
 
 
@@ -50,7 +50,7 @@ def BestOfN(  # noqa: PLR0913
     temperature: float = 1.0,
     logits_processors: list[LogitsProcessor] | None = None,
     seed: int | None = None,
-) -> list[Sample[str]]:
+) -> list[ScoredItem[str]]:
     """
     Generate `n` samples from the language model `llm` using the `scorer` to rank them.
     See the [`vLLM.SamplingParams`](https://docs.vllm.ai/en/latest/dev/sampling_params.html)
@@ -77,7 +77,7 @@ def BestOfN(  # noqa: PLR0913
         seed: The random seed.
 
     Returns:
-        A list of `decoding.pmf.Sample` objects sorted by the `scorer`.
+        A list of `decoding.pmf.ScoredItem` objects sorted by the `scorer`.
 
     Raises:
         ValueError: If any of the argument configurations are invalid.
@@ -100,8 +100,8 @@ def BestOfN(  # noqa: PLR0913
         )
         assert len(samples) == 20
         assert all(s.item.endswith(".") for s in samples)
-        assert all(s.utility == -len(s.item) for s in samples)
-        assert samples[0].utility >= samples[-1].utility
+        assert all(s.score == -len(s.item) for s in samples)
+        assert samples[0].score >= samples[-1].score
         ```
 
     """
@@ -144,7 +144,7 @@ def TreeSearch(  # noqa: PLR0913
     temperature: float = 1.0,
     logits_processors: list[LogitsProcessor] | None = None,
     seed: int | None = None,
-) -> list[Sample[str]]:
+) -> list[ScoredItem[str]]:
     """
     Generate `n` samples from the language model `llm` using the `step_scorer` to
     rank them at each sync step and the `final_scorer` to rank the final beam.
@@ -183,7 +183,7 @@ def TreeSearch(  # noqa: PLR0913
         seed: The random seed.
 
     Returns:
-        A list of `decoding.pmf.Sample` objects sorted by the `final_scorer`.
+        A list of `decoding.pmf.ScoredItem` objects sorted by the `final_scorer`.
 
     Raises:
         ValueError: If any of the argument configurations are invalid
@@ -194,13 +194,13 @@ def TreeSearch(  # noqa: PLR0913
         ```python
         from decoding.generators import TreeSearch
         from decoding.models import LanguageModel
-        from decoding.pmf import Sample
+        from decoding.pmf import ScoredItem
         from decoding.scorers import Scorer
 
         def f(x):
             if "." in x:
                 x = x.split(".")[0] + "."
-            return Sample(item=x, utility=-len(x))
+            return ScoredItem(item=x, score=-len(x))
 
         llm = LanguageModel.from_id("gpt2")
         scorer = Scorer.from_f_str_to_sample(f)
@@ -218,8 +218,8 @@ def TreeSearch(  # noqa: PLR0913
         )
         assert len(samples) == 3
         assert all(s.item.endswith(".") for s in samples)
-        assert all(s.utility == -len(s.item) for s in samples)
-        assert samples[0].utility >= samples[-1].utility
+        assert all(s.score == -len(s.item) for s in samples)
+        assert samples[0].score >= samples[-1].score
         ```
 
     """
@@ -256,7 +256,7 @@ def _BestOfN(
     llm: LanguageModel,
     scorer: Scorer,
     sampling_params: SamplingParams,
-) -> list[Sample[str]]:
+) -> list[ScoredItem[str]]:
     return scorer(llm(prompts=prompts, params=sampling_params))
 
 
@@ -266,8 +266,8 @@ def _TreeSearch(
     scorer: Scorer,
     search_params: _SearchParams,
     sampling_params: SamplingParams,
-) -> list[Sample[str]]:
-    beam = [Sample(item=p, utility=-float("inf")) for p in prompts]
+) -> list[ScoredItem[str]]:
+    beam = [ScoredItem(item=p, score=-float("inf")) for p in prompts]
     passing = []
     for _ in range(search_params.max_steps):
         stop_pass = [search_params.stop_pass(s.item) for s in beam]
@@ -352,7 +352,7 @@ def _guard_positive_int(n: int) -> int:
     return n
 
 
-def _handle_failed_beam(passing: list[Sample[str]]) -> list[Sample[str]]:
+def _handle_failed_beam(passing: list[ScoredItem[str]]) -> list[ScoredItem[str]]:
     if len(passing) == 0:
         msg = "All live samples failed before any passed stop conditions."
         msg += " Check compatibility of stop conditions or expand search."
@@ -366,7 +366,7 @@ def _handle_failed_beam(passing: list[Sample[str]]) -> list[Sample[str]]:
     return sort_samples(passing)
 
 
-def _handle_maxsteps(passing: list[Sample[str]]) -> list[Sample[str]]:
+def _handle_maxsteps(passing: list[ScoredItem[str]]) -> list[ScoredItem[str]]:
     if len(passing) == 0:
         msg = "Max steps reached, and no samples passed stop conditions."
         raise RuntimeError(msg)

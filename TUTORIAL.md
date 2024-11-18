@@ -99,7 +99,7 @@ from nltk.sem.logic import LogicalExpressionException, LogicParser
 from decoding.generators import TreeSearch
 from decoding.estimators import SelfConsistency
 from decoding.models import LanguageModel
-from decoding.pmf import CategoricalLogPMF, Sample
+from decoding.pmf import CategoricalLogPMF, ScoredItem
 from decoding.scorers import Scorer
 
 # here's our prompt for the problem we'd like solved
@@ -139,26 +139,26 @@ def stop_pass(s: str) -> bool:
 # let's specify how to score particles at each step
 # note that compared to the previous example,
 # here instead of simply returning a float, 
-# we're returning a `Sample`: a str with an associated utility
+# we're returning a `ScoredItem`: a str with an associated score
 # this will allow us to modify the state of the string
-def step_score_fn(s: str) -> Sample[str]:
+def step_score_fn(s: str) -> ScoredItem[str]:
     if stop_pass(s):
-        return Sample(item=s, utility=float("inf"))
+        return ScoredItem(item=s, score=float("inf"))
     lines = s.strip().split("\n")
     last_line = lines[-1]
     if last_line.startswith(("P:", "C:")):
         stmt = last_line[2:]
         try:
             parser.parse(stmt)
-            return Sample(item=s, utility=len(lines))
+            return ScoredItem(item=s, score=len(lines))
         except LogicalExpressionException:
             pass
     backtrack = "\n".join(lines[:-1]) + "\n"
-    return Sample(item=backtrack, utility=len(lines) - 1)
+    return ScoredItem(item=backtrack, score=len(lines) - 1)
 # the logic above is as follows:
-# - if a string passes the stop condition, set utility high to keep it
+# - if a string passes the stop condition, set the score high to keep it
 # - for the strings that are not done, try to parse the last line
-# - if is parses, keep it and update the utility to the number of passing lines
+# - if is parses, keep it and update the score to the number of passing lines
 # - if it fails, backtrack the string to the last passing line
 # using a very simple (~10 line) step function, 
 # we've implemented a backtracking tree search algorithm
@@ -171,7 +171,7 @@ step_scorer = Scorer.from_f_str_to_sample(step_score_fn, parallelize=True)
 
 # now let's specify our final score function 
 # to resolve the beam of passing particles
-def final_score_fn(gens: CategoricalLogPMF[str]) -> list[Sample[str]]:
+def final_score_fn(gens: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
     def postproc(gen: str) -> str:
         try:
             new = gen[len(prompt) - 2 :]
@@ -212,7 +212,7 @@ final_scorer = Scorer.from_f_catlogpmf_to_batch_sample(final_score_fn)
 # we can access it
 
 # finally, let's wrap this all up in a `TreeSearch` generator
-def run(prompt: str) -> list[Sample[str]]:
+def run(prompt: str) -> list[ScoredItem[str]]:
     return TreeSearch(
         prompt=prompt,
         llm=llm,
