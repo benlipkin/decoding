@@ -24,7 +24,12 @@ from functools import cache
 
 import jax.numpy as jnp
 
-from decoding.pmf import CategoricalLogPMF, ScoredItem, make_samples, sort_samples
+from decoding.pmf import (
+    CategoricalLogPMF,
+    ScoredItem,
+    make_scored_items,
+    sort_scored_items,
+)
 from decoding.types import FS, NUM, T_, T
 
 
@@ -216,7 +221,7 @@ def SelfConsistency(
             c = _postproc(sample.item)
             if filt(c):
                 ht[c] += float(sample.score)
-        return sort_samples([ScoredItem(item=c, score=u) for c, u in ht.items()])
+        return sort_scored_items([ScoredItem(item=c, score=u) for c, u in ht.items()])
 
     def _utility(c1: T, c2: T) -> int:
         return int(_postproc(c1) == _postproc(c2))
@@ -236,4 +241,4 @@ def _MBR(
             utilities = list(e.map(_calc_utility, d.logp, d.cats))
     else:
         utilities = list(map(_calc_utility, d.logp, d.cats))
-    return sort_samples(make_samples(d.cats, utilities))
+    return sort_scored_items(make_scored_items(d.cats, utilities))

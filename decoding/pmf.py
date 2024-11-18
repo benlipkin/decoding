@@ -48,34 +48,34 @@ class ScoredItem(Generic[T]):
     score: NUM
 
 
-def sort_samples(samples: Iterable[ScoredItem[T]]) -> list[ScoredItem[T]]:
+def sort_scored_items(items: Iterable[ScoredItem[T]]) -> list[ScoredItem[T]]:
     """
     Sort a list of `ScoredItem` instances by score in descending order.
 
     Args:
-        samples: An iterable of `ScoredItem` instances.
+        items: An iterable of `ScoredItem` instances.
 
     Returns:
         A list of `ScoredItem` instances sorted by score in descending order.
 
     Example:
         ```python
-        from decoding.pmf import ScoredItem, sort_samples
+        from decoding.pmf import ScoredItem, sort_scored_items
 
-        samples = [
+        scored_items = [
             ScoredItem(item="a", score=0.5),
             ScoredItem(item="b", score=0.3),
             ScoredItem(item="c", score=0.7),
         ]
-        sorted_samples = sort_samples(samples)
-        assert sorted_samples[0] == ScoredItem(item="c", score=0.7)
+        sorted_items = sort_scored_items(scored_items)
+        assert sorted_items[0] == ScoredItem(item="c", score=0.7)
         ```
 
     """
-    return sorted(samples, key=lambda x: float(x.score), reverse=True)
+    return sorted(items, key=lambda x: float(x.score), reverse=True)
 
 
-def make_samples(items: Sequence[T], scores: Sequence[NUM]) -> list[ScoredItem[T]]:
+def make_scored_items(items: Sequence[T], scores: Sequence[NUM]) -> list[ScoredItem[T]]:
     """
     Create a list of `ScoredItem` instances from a list of items and scores.
 
@@ -88,12 +88,12 @@ def make_samples(items: Sequence[T], scores: Sequence[NUM]) -> list[ScoredItem[T
 
     Example:
         ```python
-        from decoding.pmf import make_samples
+        from decoding.pmf import make_scored_items
 
         items = ["a", "b", "c"]
         scores = [0.5, 0.3, 0.7]
-        samples = make_samples(items, scores)
-        assert samples[0] == ScoredItem(item="a", score=0.5)
+        scored_items = make_scored_items(items, scores)
+        assert scored_items[0] == ScoredItem(item="a", score=0.5)
         ```
 
     """

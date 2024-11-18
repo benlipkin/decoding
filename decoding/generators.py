@@ -22,7 +22,7 @@ from vllm.sampling_params import LogitsProcessor, SamplingParams
 from vllm.transformers_utils.tokenizers import MistralTokenizer
 
 from decoding.models import LanguageModel
-from decoding.pmf import CategoricalLogPMF, ScoredItem, sort_samples
+from decoding.pmf import CategoricalLogPMF, ScoredItem, sort_scored_items
 from decoding.scorers import Scorer
 
 
@@ -120,7 +120,7 @@ def BestOfN(  # noqa: PLR0913
         **_default_sampling_kwargs,  # type: ignore[reportArgumentType]
     )
     samples = _BestOfN([prompt], llm, scorer, sampling_params)
-    return sort_samples(samples)
+    return sort_scored_items(samples)
 
 
 def TreeSearch(  # noqa: PLR0913
@@ -248,7 +248,7 @@ def TreeSearch(  # noqa: PLR0913
         **_default_sampling_kwargs,  # type: ignore[reportArgumentType]
     )
     samples = _TreeSearch([prompt], llm, step_scorer, search_params, sampling_params)
-    return sort_samples(final_scorer(CategoricalLogPMF.from_samples(samples)))
+    return sort_scored_items(final_scorer(CategoricalLogPMF.from_samples(samples)))
 
 
 def _BestOfN(
@@ -282,13 +282,13 @@ def _TreeSearch(
             else:  # failed
                 pass
         if len(passing) >= search_params.n:
-            return sort_samples(passing)[: search_params.n]
+            return sort_scored_items(passing)[: search_params.n]
         if len(prompts) == 0:
             return _handle_failed_beam(passing)
         live = _BestOfN(prompts, llm, scorer, sampling_params)
         beam = passing + live
         if len(beam) > search_params.width:
-            beam = sort_samples(beam)[: search_params.width]
+            beam = sort_scored_items(beam)[: search_params.width]
     return _handle_maxsteps(passing)
 
 
@@ -363,7 +363,7 @@ def _handle_failed_beam(passing: list[ScoredItem[str]]) -> list[ScoredItem[str]]
     msg += " but some completed samples have already passed stopping conditions."
     msg += " Returning available passing samples."
     warnings.warn(msg, stacklevel=2)
-    return sort_samples(passing)
+    return sort_scored_items(passing)
 
 
 def _handle_maxsteps(passing: list[ScoredItem[str]]) -> list[ScoredItem[str]]:
@@ -376,7 +376,7 @@ def _handle_maxsteps(passing: list[ScoredItem[str]]) -> list[ScoredItem[str]]:
     msg += "but some samples have already passed stopping conditions."
     msg += " Returning available passing samples."
     warnings.warn(msg, stacklevel=2)
-    return sort_samples(passing)
+    return sort_scored_items(passing)
 
 
 _default_sampling_kwargs = {

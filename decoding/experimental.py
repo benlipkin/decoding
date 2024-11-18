@@ -15,7 +15,12 @@ from decoding.generators import (
     _TreeSearch,  # type: ignore[reportPrivateUsage]
 )
 from decoding.models import LanguageModel
-from decoding.pmf import CategoricalLogPMF, ScoredItem, make_samples, sort_samples
+from decoding.pmf import (
+    CategoricalLogPMF,
+    ScoredItem,
+    make_scored_items,
+    sort_scored_items,
+)
 from decoding.scorers import Scorer
 
 
@@ -67,7 +72,7 @@ def RolloutTreeSearch(  # noqa: PLR0913
     samples = _RolloutTreeSearch(
         [prompt], llm, step_scorer, search_params, sampling_params
     )
-    return sort_samples(final_scorer(CategoricalLogPMF.from_samples(samples)))
+    return sort_scored_items(final_scorer(CategoricalLogPMF.from_samples(samples)))
 
 
 def _RolloutTreeSearch(
@@ -95,7 +100,7 @@ def _RolloutTreeSearch(
             except ValueError:
                 samples = [ScoredItem(item=prompt, score=-float("inf"))]
             scores.append(samples[0].score)
-        return make_samples(prompts, scores)
+        return make_scored_items(prompts, scores)
 
     _scorer = Scorer.from_f_logpmf_to_batch_item(f)
     return _TreeSearch(prompts, llm, _scorer, search_params, sampling_params)

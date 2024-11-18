@@ -20,7 +20,12 @@ from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from decoding.pmf import CategoricalLogPMF, ScoredItem, make_samples, sort_samples
+from decoding.pmf import (
+    CategoricalLogPMF,
+    ScoredItem,
+    make_scored_items,
+    sort_scored_items,
+)
 from decoding.types import NUM
 
 
@@ -63,7 +68,7 @@ class Scorer:
             ```
 
         """
-        return sort_samples(self._f(d))
+        return sort_scored_items(self._f(d))
 
     @classmethod
     def from_f_str_to_num(
@@ -103,7 +108,7 @@ class Scorer:
                     utilities = list(e.map(f, d.cats))
             else:
                 utilities = list(map(f, d.cats))
-            return make_samples(d.cats, utilities)
+            return make_scored_items(d.cats, utilities)
 
         return cls(_f=_f)
 
@@ -139,7 +144,7 @@ class Scorer:
 
         def _f(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
             utilities = f(d.cats)
-            return make_samples(d.cats, utilities)
+            return make_scored_items(d.cats, utilities)
 
         return cls(_f=_f)
 
@@ -182,7 +187,7 @@ class Scorer:
 
         def _f(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
             utilities = f(d)
-            return make_samples(d.cats, utilities)
+            return make_scored_items(d.cats, utilities)
 
         return cls(_f=_f)
 
