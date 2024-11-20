@@ -22,7 +22,7 @@ from vllm.sampling_params import LogitsProcessor, SamplingParams
 from vllm.transformers_utils.tokenizers import MistralTokenizer
 
 from decoding.models import LanguageModel
-from decoding.pmf import CategoricalLogPMF, ScoredItem, sort_scored_items
+from decoding.pmf import LogPMF, ScoredItem, sort_scored_items
 from decoding.scorers import Scorer
 
 
@@ -248,7 +248,7 @@ def TreeSearch(  # noqa: PLR0913
         **_default_sampling_kwargs,  # type: ignore[reportArgumentType]
     )
     samples = _TreeSearch([prompt], llm, step_scorer, search_params, sampling_params)
-    return sort_scored_items(final_scorer(CategoricalLogPMF.from_samples(samples)))
+    return sort_scored_items(final_scorer(LogPMF.from_samples(samples)))
 
 
 def _BestOfN(

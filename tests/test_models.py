@@ -10,14 +10,14 @@ def test_llm_generate() -> None:
     sp = SamplingParams(detokenize=True, logprobs=None, prompt_logprobs=None, n=2)
     prompts = ["The"] * 3
     outputs = llm(prompts=prompts, params=sp)
-    assert len(outputs.cats) == len(prompts) * sp.n
+    assert len(outputs.items) == len(prompts) * sp.n
     assert len(set(outputs.logp.tolist())) == 1
 
     _sp = sp.clone()
     _sp.logprobs = 0
     _sp.prompt_logprobs = 0
     outputs = llm(prompts=prompts, params=_sp)
-    assert len(outputs.cats) == len(prompts) * sp.n
+    assert len(outputs.items) == len(prompts) * sp.n
     assert len(set(outputs.logp.tolist())) == len(prompts) * sp.n
 
     sp.detokenize = False

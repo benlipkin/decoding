@@ -1,5 +1,5 @@
 """
-Scorers are objects that take an instance of `decoding.pmf.CategoricalLogPMF`
+Scorers are objects that take an instance of `decoding.pmf.LogPMF`
 and return a list of `decoding.pmf.ScoredItem` instances that are sorted by their
 scores. The scores are computed by a function that is passed to the constructor
 of the `Scorer` object.
@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from decoding.pmf import (
-    CategoricalLogPMF,
+    LogPMF,
     ScoredItem,
     make_scored_items,
     sort_scored_items,
@@ -35,21 +35,21 @@ class Scorer:
     The `Scorer` class wraps and coordinates user-supplied scoring functions.
     """
 
-    _f: Callable[[CategoricalLogPMF[str]], list[ScoredItem[str]]]
+    _f: Callable[[LogPMF[str]], list[ScoredItem[str]]]
 
-    def __call__(self, d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
+    def __call__(self, d: LogPMF[str]) -> list[ScoredItem[str]]:
         """
         `__call__` is an alias for `score`.
         """
         return self.score(d)
 
-    def score(self, d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
+    def score(self, d: LogPMF[str]) -> list[ScoredItem[str]]:
         """
-        Process a `decoding.pmf.CategoricalLogPMF` instance and returns a list
+        Process a `decoding.pmf.LogPMF` instance and returns a list
         of `decoding.pmf.ScoredItem` instances that are sorted by their scores.
 
         Args:
-            d: A `decoding.pmf.CategoricalLogPMF` instance.
+            d: A `decoding.pmf.LogPMF` instance.
 
         Returns:
             A list of `decoding.pmf.ScoredItem` instances that are sorted
@@ -57,11 +57,11 @@ class Scorer:
 
         Example:
             ```python
-            from decoding.pmf import CategoricalLogPMF
+            from decoding.pmf import LogPMF
             from decoding.scorers import Scorer
 
             scorer = Scorer.from_f_str_to_num(lambda x: len(x))
-            d = CategoricalLogPMF.from_samples(["a", "bb", "ccc"])
+            d = LogPMF.from_samples(["a", "bb", "ccc"])
             samples = scorer(d)
             assert samples[0].item == "ccc"
             assert samples[0].score == 3
@@ -77,7 +77,7 @@ class Scorer:
         """
         Construct a `Scorer` object from a function that maps a string to a
         number. The `Scorer` object will then score a
-        `decoding.pmf.CategoricalLogPMF` instance by applying this function to
+        `decoding.pmf.LogPMF` instance by applying this function to
         each of its categories.
 
         Args:
@@ -90,11 +90,11 @@ class Scorer:
 
         Example:
             ```python
-            from decoding.pmf import CategoricalLogPMF
+            from decoding.pmf import LogPMF
             from decoding.scorers import Scorer
 
             scorer = Scorer.from_f_str_to_num(lambda x: len(x), parallelize=True)
-            d = CategoricalLogPMF.from_samples(["a", "bb", "ccc"])
+            d = LogPMF.from_samples(["a", "bb", "ccc"])
             samples = scorer(d)
             assert samples[-1].item == "a"
             assert samples[-1].score == 1
@@ -102,13 +102,13 @@ class Scorer:
 
         """
 
-        def _f(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
+        def _f(d: LogPMF[str]) -> list[ScoredItem[str]]:
             if parallelize:
                 with ThreadPoolExecutor() as e:
-                    utilities = list(e.map(f, d.cats))
+                    utilities = list(e.map(f, d.items))
             else:
-                utilities = list(map(f, d.cats))
-            return make_scored_items(d.cats, utilities)
+                utilities = list(map(f, d.items))
+            return make_scored_items(d.items, utilities)
 
         return cls(_f=_f)
 
@@ -119,7 +119,7 @@ class Scorer:
         """
         Construct a `Scorer` object from a function that maps a sequence of
         strings to a sequence of numbers. The `Scorer` object will then score
-        a `decoding.pmf.CategoricalLogPMF` instance by applying this function
+        a `decoding.pmf.LogPMF` instance by applying this function
         to its categories.
 
         Args:
@@ -130,11 +130,11 @@ class Scorer:
 
         Example:
             ```python
-            from decoding.pmf import CategoricalLogPMF
+            from decoding.pmf import LogPMF
             from decoding.scorers import Scorer
 
             scorer = Scorer.from_f_batch_str_to_batch_num(lambda x: [len(s) for s in x])
-            d = CategoricalLogPMF.from_samples(["a", "bb", "ccc"])
+            d = LogPMF.from_samples(["a", "bb", "ccc"])
             samples = scorer(d)
             assert samples[0].item == "ccc"
             assert samples[0].score == 3
@@ -142,24 +142,24 @@ class Scorer:
 
         """
 
-        def _f(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
-            utilities = f(d.cats)
-            return make_scored_items(d.cats, utilities)
+        def _f(d: LogPMF[str]) -> list[ScoredItem[str]]:
+            utilities = f(d.items)
+            return make_scored_items(d.items, utilities)
 
         return cls(_f=_f)
 
     @classmethod
     def from_f_logpmf_to_batch_num(
-        cls, f: Callable[[CategoricalLogPMF[str]], Sequence[NUM]]
+        cls, f: Callable[[LogPMF[str]], Sequence[NUM]]
     ) -> "Scorer":
         """
         Construct a `Scorer` object from a function that maps a
-        `decoding.pmf.CategoricalLogPMF` instance to a sequence of numbers.
+        `decoding.pmf.LogPMF` instance to a sequence of numbers.
         The `Scorer` object will then score the
-        `decoding.pmf.CategoricalLogPMF` instance directly.
+        `decoding.pmf.LogPMF` instance directly.
 
         Args:
-            f: A function that maps a `decoding.pmf.CategoricalLogPMF`
+            f: A function that maps a `decoding.pmf.LogPMF`
                 instance to a sequence of numbers.
 
         Returns:
@@ -168,12 +168,12 @@ class Scorer:
         Example:
             ```python
             import jax.numpy as jnp
-            from decoding.pmf import CategoricalLogPMF
+            from decoding.pmf import LogPMF
             from decoding.scorers import Scorer
 
-            f = lambda d: [jnp.exp(logp) * len(cat) for logp, cat in d]
+            f = lambda d: [jnp.exp(logp) * len(item) for logp, item in d]
             scorer = Scorer.from_f_logpmf_to_batch_num(f)
-            d = CategoricalLogPMF.from_samples(["a", "bb", "bb", "ccc"])
+            d = LogPMF.from_samples(["a", "bb", "bb", "ccc"])
             samples = scorer(d)
             assert samples[0].item == "bb"
             assert samples[0].score == 1.0
@@ -185,9 +185,9 @@ class Scorer:
 
         """
 
-        def _f(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
+        def _f(d: LogPMF[str]) -> list[ScoredItem[str]]:
             utilities = f(d)
-            return make_scored_items(d.cats, utilities)
+            return make_scored_items(d.items, utilities)
 
         return cls(_f=_f)
 
@@ -198,7 +198,7 @@ class Scorer:
         """
         Construct a `Scorer` object from a function that maps a string to a
         `decoding.pmf.ScoredItem` instance. The `Scorer` object will then score a
-        `decoding.pmf.CategoricalLogPMF` instance by applying this function to
+        `decoding.pmf.LogPMF` instance by applying this function to
         each of its categories. This allows us to update not only the score
         values but also the items themselves.
 
@@ -212,7 +212,7 @@ class Scorer:
 
         Example:
             ```python
-            from decoding.pmf import CategoricalLogPMF, ScoredItem
+            from decoding.pmf import LogPMF, ScoredItem
             from decoding.scorers import Scorer
 
             def f(x):
@@ -221,7 +221,7 @@ class Scorer:
                 return ScoredItem(item=x, score=len(x))
 
             scorer = Scorer.from_f_str_to_item(f, parallelize=True)
-            d = CategoricalLogPMF.from_samples(["a", "bb.", "ccc"])
+            d = LogPMF.from_samples(["a", "bb.", "ccc"])
             samples = scorer(d)
             assert samples[0].item == "ccc"
             assert samples[0].score == 3
@@ -231,12 +231,12 @@ class Scorer:
 
         """
 
-        def _f(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
+        def _f(d: LogPMF[str]) -> list[ScoredItem[str]]:
             if parallelize:
                 with ThreadPoolExecutor() as e:
-                    return list(e.map(f, d.cats))
+                    return list(e.map(f, d.items))
             else:
-                return list(map(f, d.cats))
+                return list(map(f, d.items))
 
         return cls(_f=_f)
 
@@ -247,7 +247,7 @@ class Scorer:
         """
         Construct a `Scorer` object from a function that maps a sequence of strings
         to a sequence of `decoding.pmf.ScoredItem` instances. The `Scorer` object will
-        then score a `decoding.pmf.CategoricalLogPMF` instance by applying this function
+        then score a `decoding.pmf.LogPMF` instance by applying this function
         to its categories. This allows us to update not only the score values but
         also the items themselves.
 
@@ -260,12 +260,12 @@ class Scorer:
 
         Example:
             ```python
-            from decoding.pmf import CategoricalLogPMF, ScoredItem
+            from decoding.pmf import LogPMF, ScoredItem
             from decoding.scorers import Scorer
 
             f = lambda xs: [ScoredItem(item=x[1:], score=len(x[1:])) for x in xs]
             scorer = Scorer.from_f_batch_str_to_batch_item(f)
-            d = CategoricalLogPMF.from_samples(["_a", "_bb", "_ccc"])
+            d = LogPMF.from_samples(["_a", "_bb", "_ccc"])
             samples = scorer(d)
             assert samples[0].item == "ccc"
             assert samples[0].score == 3
@@ -273,25 +273,25 @@ class Scorer:
 
         """
 
-        def _f(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
-            return list(f(d.cats))
+        def _f(d: LogPMF[str]) -> list[ScoredItem[str]]:
+            return list(f(d.items))
 
         return cls(_f=_f)
 
     @classmethod
     def from_f_logpmf_to_batch_item(
-        cls, f: Callable[[CategoricalLogPMF[str]], Sequence[ScoredItem[str]]]
+        cls, f: Callable[[LogPMF[str]], Sequence[ScoredItem[str]]]
     ) -> "Scorer":
         """
         Construct a `Scorer` object from a function that maps a
-        `decoding.pmf.CategoricalLogPMF` instance to a sequence of
+        `decoding.pmf.LogPMF` instance to a sequence of
         `decoding.pmf.ScoredItem` instances. This type signature actually
         matches much of the `decoding.estimators` module, so this constructor
         is particularly useful for building `Scorer` instances based on
         `decoding.estimators.MBR`, etc.
 
         Args:
-            f: A function that maps a `decoding.pmf.CategoricalLogPMF`
+            f: A function that maps a `decoding.pmf.LogPMF`
                 instance to a sequence of `decoding.pmf.ScoredItem` instances.
 
         Returns:
@@ -301,12 +301,12 @@ class Scorer:
             ```python
             import jax.numpy as jnp
             from decoding.estimators import MBR
-            from decoding.pmf import CategoricalLogPMF
+            from decoding.pmf import LogPMF
             from decoding.scorers import Scorer
 
             f = lambda d: MBR(d, utility=lambda x1, x2: x1 < x2)
             scorer = Scorer.from_f_logpmf_to_batch_item(f)
-            d = CategoricalLogPMF.from_samples(["aa", "bb", "cc"])
+            d = LogPMF.from_samples(["aa", "bb", "cc"])
             samples = scorer(d)
             assert samples[0].item == "aa"
             assert jnp.isclose(samples[0].score, 2/3)
@@ -316,7 +316,7 @@ class Scorer:
 
         """
 
-        def _f(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
+        def _f(d: LogPMF[str]) -> list[ScoredItem[str]]:
             return list(f(d))
 
         return cls(_f=_f)

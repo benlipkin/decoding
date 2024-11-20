@@ -16,7 +16,7 @@ from decoding.generators import (
 )
 from decoding.models import LanguageModel
 from decoding.pmf import (
-    CategoricalLogPMF,
+    LogPMF,
     ScoredItem,
     make_scored_items,
     sort_scored_items,
@@ -72,7 +72,7 @@ def RolloutTreeSearch(  # noqa: PLR0913
     samples = _RolloutTreeSearch(
         [prompt], llm, step_scorer, search_params, sampling_params
     )
-    return sort_scored_items(final_scorer(CategoricalLogPMF.from_samples(samples)))
+    return sort_scored_items(final_scorer(LogPMF.from_samples(samples)))
 
 
 def _RolloutTreeSearch(
@@ -82,7 +82,7 @@ def _RolloutTreeSearch(
     search_params: _SearchParams,
     sampling_params: SamplingParams,
 ) -> list[ScoredItem[str]]:
-    def f(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
+    def f(d: LogPMF[str]) -> list[ScoredItem[str]]:
         _search_params = _SearchParams(
             n=1,
             width=search_params.width,
@@ -90,7 +90,7 @@ def _RolloutTreeSearch(
             stop_pass=search_params.stop_pass,
             stop_fail=search_params.stop_fail,
         )
-        prompts = list(d.cats)
+        prompts = list(d.items)
         scores = []
         for prompt in prompts:
             try:

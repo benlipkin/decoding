@@ -99,7 +99,7 @@ from nltk.sem.logic import LogicalExpressionException, LogicParser
 from decoding.generators import TreeSearch
 from decoding.estimators import SelfConsistency
 from decoding.models import LanguageModel
-from decoding.pmf import CategoricalLogPMF, ScoredItem
+from decoding.pmf import LogPMF, ScoredItem
 from decoding.scorers import Scorer
 
 # here's our prompt for the problem we'd like solved
@@ -171,7 +171,7 @@ step_scorer = Scorer.from_f_str_to_sample(step_score_fn, parallelize=True)
 
 # now let's specify our final score function 
 # to resolve the beam of passing particles
-def final_score_fn(gens: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
+def final_score_fn(gens: LogPMF[str]) -> list[ScoredItem[str]]:
     def postproc(gen: str) -> str:
         try:
             new = gen[len(prompt) - 2 :]
@@ -204,7 +204,7 @@ def final_score_fn(gens: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
 
 # here we'll use this to construct a scorer
 final_scorer = Scorer.from_f_catlogpmf_to_batch_sample(final_score_fn)
-# note that `gens` here is an instance of the `CategoricalLogPMF` class,
+# note that `gens` here is an instance of the `LogPMF` class,
 # a categorical log probability mass function
 # one of the underlying building blocks of this library
 # we don't need to work with it, as we saw in the first example

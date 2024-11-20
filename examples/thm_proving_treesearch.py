@@ -12,7 +12,7 @@ except ImportError as e:
 from decoding.estimators import SelfConsistency
 from decoding.generators import TreeSearch
 from decoding.models import LanguageModel
-from decoding.pmf import CategoricalLogPMF, ScoredItem
+from decoding.pmf import LogPMF, ScoredItem
 from decoding.scorers import Scorer
 
 llm = LanguageModel.from_id(
@@ -40,7 +40,7 @@ def step_score_fn(s: str) -> ScoredItem[str]:
     return ScoredItem(item=backtrack, score=len(lines) - 1)
 
 
-def final_score_fn(d: CategoricalLogPMF[str]) -> list[ScoredItem[str]]:
+def final_score_fn(d: LogPMF[str]) -> list[ScoredItem[str]]:
     def postproc(gen: str) -> str:
         try:
             new = gen[len(prompt) - 2 :]

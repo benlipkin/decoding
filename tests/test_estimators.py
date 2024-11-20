@@ -5,7 +5,7 @@ import jax.numpy as jnp
 
 from decoding.estimators import MAP, MBR, SelfConsistency, commutativeMBR, linearMBR
 from decoding.metrics import levenshtein
-from decoding.pmf import CategoricalLogPMF
+from decoding.pmf import LogPMF
 
 
 def test_MBR() -> None:
@@ -13,14 +13,14 @@ def test_MBR() -> None:
         return int(s1 < s2)
 
     c = "cba"
-    d = CategoricalLogPMF.from_samples(c)
+    d = LogPMF.from_samples(c)
     assert [s.item for s in MBR(d, utility=u1)] == sorted(c)
 
     def u2(_1: str, _2: str) -> float:
         return 1.0
 
     logits = jnp.asarray([1.0, 2.0, 3.0])
-    d = CategoricalLogPMF.from_logits(logits=logits, cats=c)
+    d = LogPMF.from_logits(logits=logits, items=c)
     assert [s.item for s in MBR(d, utility=u2)] == list(c)[::-1]
     assert [s.item for s in MBR(d, utility=u2, parallelize=True)] == list(c)[::-1]
 
@@ -31,7 +31,7 @@ def test_commutativeMBR() -> None:
         return -levenshtein(s1, s2)
 
     c = ["car", "can", "cat", "bat", "hat"]
-    d = CategoricalLogPMF.from_samples(c)
+    d = LogPMF.from_samples(c)
 
     t1 = time.time()
     s1 = MBR(d, utility=u)
@@ -55,7 +55,7 @@ def test_linearMBR() -> None:
         return len(s1) + len(s2)
 
     c = ["a", "aaaaaa", "aa", "aaaa", "aaaaa", "", "aaa"]
-    d = CategoricalLogPMF.from_samples(c)
+    d = LogPMF.from_samples(c)
 
     t1 = time.time()
     o1 = MBR(d, utility=u)
@@ -87,7 +87,7 @@ def test_linearMBR() -> None:
 def test_MAP() -> None:
     c = [1, 2, 3, 4, 5]
     logits = jnp.asarray(c).astype(float)
-    d = CategoricalLogPMF.from_logits(logits=logits, cats=c)
+    d = LogPMF.from_logits(logits=logits, items=c)
     assert [s.item for s in MAP(d)] == c[::-1]
 
 
@@ -107,5 +107,5 @@ def test_SelfConsistency() -> None:
         "bad response",
         "will get filtered",
     ]
-    d = CategoricalLogPMF.from_samples(c)
+    d = LogPMF.from_samples(c)
     assert SelfConsistency(d, postproc=postproc, filt=filt)[0].item == "2"

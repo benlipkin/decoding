@@ -2,26 +2,26 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytest
 
-from decoding.pmf import CategoricalLogPMF
+from decoding.pmf import LogPMF
 from decoding.samplers import greedy, minp, random, topk, topp
 from decoding.utils import getkey, logsoftmax
 
 _N = 10_000
 
 
-def _make_char_unigram() -> CategoricalLogPMF[str]:
+def _make_char_unigram() -> LogPMF[str]:
     chars = "abcdefghijklmnopqrstuvwxyz"
     logprobs = logsoftmax(jr.normal(getkey(), (len(chars),)))
-    return CategoricalLogPMF(logp=logprobs, cats=chars)
+    return LogPMF(logp=logprobs, items=chars)
 
 
 def test_greedy() -> None:
     p = jnp.log(jnp.asarray([0, 0.5, 0, 0.5]))
-    d_i = CategoricalLogPMF(logp=p, cats=[0, 1, 2, 3])
+    d_i = LogPMF(logp=p, items=[0, 1, 2, 3])
     assert greedy(d_i) == 1
 
     d_c = _make_char_unigram()
-    assert greedy(d_c) == d_c.cats[d_c.logp.argmax().item()]
+    assert greedy(d_c) == d_c.items[d_c.logp.argmax().item()]
 
     with pytest.raises(ValueError, match="n must be at least 1"):
         greedy(d_c, n=0)
@@ -29,7 +29,7 @@ def test_greedy() -> None:
 
 def test_random() -> None:
     p = jnp.log(jnp.asarray([0.5, 0.5]))
-    d_i = CategoricalLogPMF(logp=p, cats=[0, 1])
+    d_i = LogPMF(logp=p, items=[0, 1])
 
     samples = jnp.asarray(random(d_i, n=_N))
     assert jnp.isclose(jnp.mean(samples), 0.5, atol=0.1)
@@ -40,12 +40,12 @@ def test_random() -> None:
 
 def test_topk() -> None:
     p = jnp.log(jnp.asarray([0.3, 0.3, 0.2, 0.2]))
-    d_i = CategoricalLogPMF(logp=p, cats=[0, 1, 2, 3])
+    d_i = LogPMF(logp=p, items=[0, 1, 2, 3])
 
     samples = jnp.asarray(topk(d_i, k=2, n=_N))
     assert jnp.isclose(jnp.mean(samples), 0.5, atol=0.1)
 
-    topk_samples = jnp.asarray(topk(d_i, k=len(d_i.cats), n=_N))
+    topk_samples = jnp.asarray(topk(d_i, k=len(d_i.items), n=_N))
     random_samples = jnp.asarray(random(d_i, n=_N))
     assert jnp.isclose(jnp.mean(topk_samples), jnp.mean(random_samples), atol=0.1)
 
@@ -58,7 +58,7 @@ def test_topk() -> None:
 
 def test_topp() -> None:
     p = jnp.log(jnp.asarray([0.3, 0.3, 0.2, 0.2]))
-    d_i = CategoricalLogPMF(logp=p, cats=[0, 1, 2, 3])
+    d_i = LogPMF(logp=p, items=[0, 1, 2, 3])
 
     samples = jnp.asarray(topp(d_i, p=0.5, n=_N))
     assert jnp.mean(samples) == 0
@@ -84,7 +84,7 @@ def test_topp() -> None:
 
 def test_minp() -> None:
     p = jnp.log(jnp.asarray([0.3, 0.3, 0.2, 0.2]))
-    d_i = CategoricalLogPMF(logp=p, cats=[0, 1, 2, 3])
+    d_i = LogPMF(logp=p, items=[0, 1, 2, 3])
 
     samples = jnp.asarray(minp(d_i, p=0.4, n=_N))
     assert jnp.mean(samples) == 0
