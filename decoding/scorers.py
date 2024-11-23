@@ -20,12 +20,7 @@ from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from decoding.pmf import (
-    LogPMF,
-    ScoredItem,
-    make_scored_items,
-    sort_scored_items,
-)
+from decoding.pmf import LogPMF, ScoredItem, make_scored_items, sort_scored_items
 from decoding.types import NUM
 
 

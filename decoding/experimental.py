@@ -15,12 +15,7 @@ from decoding.generators import (
     _TreeSearch,  # type: ignore[reportPrivateUsage]
 )
 from decoding.models import LanguageModel
-from decoding.pmf import (
-    LogPMF,
-    ScoredItem,
-    make_scored_items,
-    sort_scored_items,
-)
+from decoding.pmf import LogPMF, ScoredItem, make_scored_items, sort_scored_items
 from decoding.scorers import Scorer
 
 

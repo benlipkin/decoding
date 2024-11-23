@@ -18,12 +18,12 @@ from decoding.pmf import (
 from decoding.utils import getkey, logsoftmax
 
 
-def _make_random_catlogpmf(size: int = 10) -> LogPMF[int]:
+def _make_random_logpmf(size: int = 10) -> LogPMF[int]:
     logp = logsoftmax(jr.normal(getkey(), (size,)))
     return LogPMF(logp=logp, items=list(range(size)))
 
 
-def test_categoricallogpmf() -> None:
+def test_categorical_logpmf() -> None:
     with pytest.raises(ValueError, match="LogProbs must be 1D"):
         LogPMF(logp=jnp.asarray([[0.0], [0.0]]), items=[0, 1])
     with pytest.raises(ValueError, match="LogProbs and Categories must match length"):
@@ -102,7 +102,7 @@ def test_entropy() -> None:
     d = LogPMF(logp=jnp.log(p), items=c)
     assert entropy(d) > 0.0
 
-    d = _make_random_catlogpmf()
+    d = _make_random_logpmf()
     surps = jnp.asarray([surprise(d, i) for i in range(len(d.items))])
     h = entropy(d)
     assert jnp.isclose(h, jnp.sum(jnp.exp(d.logp) * surps))
@@ -156,8 +156,8 @@ def test_cross_entropy() -> None:
     assert ce_pq == jnp.inf
     assert ce_qp / jnp.log(2) == 1.0
 
-    d_p = _make_random_catlogpmf()
-    d_q = _make_random_catlogpmf()
+    d_p = _make_random_logpmf()
+    d_q = _make_random_logpmf()
     h_p = entropy(d_p)
     h_q = entropy(d_q)
     kl_pq = kl_divergence(d_p, d_q)
@@ -185,8 +185,8 @@ def test_js_divergence() -> None:
     jsd = js_divergence(d_p, d_q)
     assert 0.0 < jsd < jnp.inf
 
-    d_p = _make_random_catlogpmf()
-    d_q = _make_random_catlogpmf()
+    d_p = _make_random_logpmf()
+    d_q = _make_random_logpmf()
     jsd_pq = js_divergence(d_p, d_q)
     jsd_qp = js_divergence(d_q, d_p)
     assert jnp.isclose(jsd_pq, jsd_qp)
@@ -204,16 +204,16 @@ def test_js_distance() -> None:
     jsm = js_distance(d_p, d_q)
     assert 0.0 < jsm < jnp.inf
 
-    d_p = _make_random_catlogpmf()
-    d_q = _make_random_catlogpmf()
+    d_p = _make_random_logpmf()
+    d_q = _make_random_logpmf()
     jsm_pq = js_distance(d_p, d_q)
     jsm_qp = js_distance(d_q, d_p)
     assert jnp.isclose(jsm_pq, jsm_qp)
 
 
 def test_jax_compare() -> None:
-    d_p = _make_random_catlogpmf()
-    d_q = _make_random_catlogpmf()
+    d_p = _make_random_logpmf()
+    d_q = _make_random_logpmf()
 
     assert jnp.isclose(
         entropy(d_p),

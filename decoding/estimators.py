@@ -24,20 +24,12 @@ from functools import cache
 
 import jax.numpy as jnp
 
-from decoding.pmf import (
-    LogPMF,
-    ScoredItem,
-    make_scored_items,
-    sort_scored_items,
-)
+from decoding.pmf import LogPMF, ScoredItem, make_scored_items, sort_scored_items
 from decoding.types import FS, NUM, T_, T
 
 
 def MBR(
-    d: LogPMF[T],
-    *,
-    utility: Callable[[T, T], NUM],
-    parallelize: bool = False,
+    d: LogPMF[T], *, utility: Callable[[T, T], NUM], parallelize: bool = False
 ) -> list[ScoredItem[T]]:
     """
     Calculate the Minimum Bayes Risk (MBR) estimator for a given distribution
@@ -70,10 +62,7 @@ def MBR(
 
 
 def commutativeMBR(
-    d: LogPMF[T],
-    *,
-    utility: Callable[[T, T], NUM],
-    parallelize: bool = False,
+    d: LogPMF[T], *, utility: Callable[[T, T], NUM], parallelize: bool = False
 ) -> list[ScoredItem[T]]:
     """
     Variant of `MBR` for commutative utility functions.
@@ -113,10 +102,7 @@ def commutativeMBR(
 
 
 def linearMBR(
-    d: LogPMF[T],
-    *,
-    utility: Callable[[T], NUM],
-    parallelize: bool = False,
+    d: LogPMF[T], *, utility: Callable[[T], NUM], parallelize: bool = False
 ) -> list[ScoredItem[T]]:
     """
     Variant of `MBR` for cases that can be executed in linear time.
