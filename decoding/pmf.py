@@ -14,6 +14,7 @@ There are also functions for creating and sorting lists of `ScoredItem` instance
 from collections import Counter
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
+from heapq import nlargest
 from typing import Generic, TypeGuard
 
 import jax.nn as jnn
@@ -48,6 +49,31 @@ class ScoredItem(Generic[T]):
     score: NUM
 
 
+def make_scored_items(items: Sequence[T], scores: Sequence[NUM]) -> list[ScoredItem[T]]:
+    """
+    Create a list of `ScoredItem` instances from a list of items and scores.
+
+    Args:
+        items: A sequence of items to be stored.
+        scores: A sequence of scores for the items.
+
+    Returns:
+        A list of `ScoredItem` instances.
+
+    Example:
+        ```python
+        from decoding.pmf import make_scored_items
+
+        items = ["a", "b", "c"]
+        scores = [0.5, 0.3, 0.7]
+        scored_items = make_scored_items(items, scores)
+        assert scored_items[0] == ScoredItem(item="a", score=0.5)
+        ```
+
+    """
+    return [ScoredItem(item=i, score=u) for i, u in zip(items, scores, strict=True)]
+
+
 def sort_scored_items(items: Iterable[ScoredItem[T]]) -> list[ScoredItem[T]]:
     """
     Sort a list of `ScoredItem` instances by score in descending order.
@@ -75,29 +101,37 @@ def sort_scored_items(items: Iterable[ScoredItem[T]]) -> list[ScoredItem[T]]:
     return sorted(items, key=lambda x: float(x.score), reverse=True)
 
 
-def make_scored_items(items: Sequence[T], scores: Sequence[NUM]) -> list[ScoredItem[T]]:
+def topk_scored_items(items: Iterable[ScoredItem[T]], k: int) -> list[ScoredItem[T]]:
     """
-    Create a list of `ScoredItem` instances from a list of items and scores.
+    Get the top `k` scored items from a list of `ScoredItem` instances.
 
     Args:
-        items: A sequence of items to be stored.
-        scores: A sequence of scores for the items.
+        items: An iterable of `ScoredItem` instances.
+        k: The number of top items to return.
 
     Returns:
-        A list of `ScoredItem` instances.
+        A list of the top `k` `ScoredItem` instances.
 
     Example:
         ```python
-        from decoding.pmf import make_scored_items
+        from decoding.pmf import ScoredItem, topk_scored_items
 
-        items = ["a", "b", "c"]
-        scores = [0.5, 0.3, 0.7]
-        scored_items = make_scored_items(items, scores)
-        assert scored_items[0] == ScoredItem(item="a", score=0.5)
+        scored_items = [
+            ScoredItem(item="a", score=0.5),
+            ScoredItem(item="b", score=0.3),
+            ScoredItem(item="c", score=0.7),
+        ]
+        best_items = topk_scored_items(scored_items, 2)
+        assert best_items[0].item == "c"
+        assert best_items[1].item == "a"
         ```
 
     """
-    return [ScoredItem(item=i, score=u) for i, u in zip(items, scores, strict=True)]
+    items = list(items)
+    if k >= len(items):
+        _warn_topk(len(items), k)
+        return sort_scored_items(items)
+    return nlargest(k, items, key=lambda x: float(x.score))
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -465,3 +499,10 @@ def _validate_indices(indices: IVX) -> None:
     if len(indices) == 0:
         msg = "Category not in distribution"
         raise ValueError(msg)
+
+
+def _warn_topk(n: int, k: int) -> None:
+    import warnings
+
+    msg = f"Requested top-{k} items from a list of {n}. Returning all items."
+    warnings.warn(msg, stacklevel=2)

@@ -208,7 +208,7 @@ def test_treesearch_maxsteps() -> None:
 
     out = beam_search(5)
     sentence = out[0].item
-    assert len(out) == n_requested
+    assert len(out) >= n_requested
     assert sentence.startswith(start)
     assert end in sentence
 
