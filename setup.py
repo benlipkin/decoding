@@ -18,7 +18,7 @@ dev_requirements = [
     "pytest==8.3.3",
     "pytest-cov==6.0.0",
     "pytest-html==4.1.1",
-    "ruff==0.7.4",
+    "ruff==0.8.0",
 ]
 
 with pathlib.Path("README.md").open(encoding="utf-8") as f:
@@ -26,7 +26,7 @@ with pathlib.Path("README.md").open(encoding="utf-8") as f:
 
 setuptools.setup(
     name="decoding",
-    version="0.1.3",
+    version="0.1.4",
     description="Composable inference algorithms with LLMs and programmable logic",
     long_description=readme,
     long_description_content_type="text/markdown",

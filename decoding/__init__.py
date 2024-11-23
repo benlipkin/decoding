@@ -38,8 +38,8 @@ from decoding import (
 __all__ = [
     "estimators",
     "generators",
-    "models",
     "metrics",
+    "models",
     "pmf",
     "samplers",
     "scorers",
