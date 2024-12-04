@@ -2,6 +2,7 @@
 
 [![Tests](https://github.com/benlipkin/decoding/actions/workflows/static.yml/badge.svg)](https://github.com/benlipkin/decoding/tree/main/tests)
 [![Docs](https://github.com/benlipkin/decoding/actions/workflows/docs.yml/badge.svg)](https://benlipkin.github.io/decoding/decoding.html)
+[![PyPI Downloads](https://static.pepy.tech/badge/decoding)](https://pypi.org/project/decoding/)
 
 Composable inference algorithms with LLMs and programmable logic.
 
